@@ -649,31 +649,36 @@
       }
     });
 
-    let modelsLoaded = false;
+    let cachedModelList = null;
 
     async function loadModels() {
-      if (modelsLoaded) return;
       try {
-        const res = await apiFetch('/models');
-        const models = res.data || [];
+        if (!cachedModelList) {
+          const res = await apiFetch('/models');
+          cachedModelList = res.data || [];
+        }
         const container = document.getElementById('modelList');
-        if (models.length === 0) {
+        if (cachedModelList.length === 0) {
           container.innerHTML = '<div class="empty">Model bulunamadı</div>';
           return;
         }
+        const stats = await apiFetch('/stats');
+        const usageMap = {};
+        for (const s of (stats.modelStats || [])) {
+          usageMap[s.model] = s.count;
+        }
         const grouped = {};
-        for (const m of models) {
+        for (const m of cachedModelList) {
           const owner = m.owned_by || 'bilinmeyen';
           if (!grouped[owner]) grouped[owner] = [];
-          grouped[owner].push(m.id);
+          grouped[owner].push({ id: m.id, count: usageMap[m.id] || 0 });
         }
         const owners = Object.keys(grouped).sort();
-        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Sağlayıcı</th><th>Model</th></tr></thead><tbody>' +
-          owners.flatMap(owner => grouped[owner].map((id, i) =>
-            `<tr><td>${i === 0 ? escHtml(owner) : ''}</td><td class="key-cell">${escHtml(id)}</td></tr>`
+        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Sağlayıcı</th><th>Model</th><th>İstek</th></tr></thead><tbody>' +
+          owners.flatMap(owner => grouped[owner].map((m, i) =>
+            `<tr><td>${i === 0 ? escHtml(owner) : ''}</td><td class="key-cell">${escHtml(m.id)}</td><td>${m.count > 0 ? formatNumber(m.count) : '-'}</td></tr>`
           )).join('') +
           '</tbody></table></div>';
-        modelsLoaded = true;
       } catch (err) {
         console.error('Model listesi yüklenemedi:', err);
       }
