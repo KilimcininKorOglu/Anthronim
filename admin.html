@@ -1,442 +1,518 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Anthronim // Yonetim</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anthronim // Yönetim</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-  :root {
-    --bg: #000000;
-    --surface: #0a0a0a;
-    --border: #1a1a1a;
-    --green: #00ff41;
-    --green-dim: #00cc33;
-    --green-muted: #006b1d;
-    --green-faint: #002a0a;
-    --red: #ff2d2d;
-    --red-dim: #661212;
-    --text: #00ff41;
-    --text-dim: #00aa2b;
-    --text-muted: #005f17;
-  }
+    :root {
+      --bg: #000000;
+      --surface: #0a0a0a;
+      --border: #1a1a1a;
+      --green: #00ff41;
+      --green-dim: #00cc33;
+      --green-muted: #006b1d;
+      --green-faint: #002a0a;
+      --red: #ff2d2d;
+      --red-dim: #661212;
+      --text: #00ff41;
+      --text-dim: #00aa2b;
+      --text-muted: #005f17;
+    }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  body {
-    font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-    padding: 24px;
-    max-width: 1280px;
-    margin: 0 auto;
-    font-size: 13px;
-  }
+    body {
+      font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px;
+      max-width: 1280px;
+      margin: 0 auto;
+      font-size: 13px;
+    }
 
-  /* --- HEADER --- */
-  .header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  .header h1 {
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-  .header-meta {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-  .pulse {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--green);
-    border-radius: 50%;
-    margin-right: 6px;
-    animation: blink 2s infinite;
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: .3; }
-  }
+    /* --- HEADER --- */
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
 
-  /* --- STATS --- */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    margin-bottom: 32px;
-  }
-  .stat-card {
-    background: var(--surface);
-    padding: 20px 16px;
-  }
-  .stat-card .label {
-    font-size: 10px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 8px;
-  }
-  .stat-card .value {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--green);
-    letter-spacing: -1px;
-  }
+    .header h1 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
 
-  /* --- SECTIONS --- */
-  .section {
-    margin-bottom: 32px;
-  }
-  .section-header {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 16px;
-  }
+    .header-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
 
-  /* --- FORM --- */
-  .add-form {
-    display: flex;
-    gap: 1px;
-    margin-bottom: 16px;
-    background: var(--border);
-    border: 1px solid var(--border);
-  }
-  .add-form input {
-    padding: 10px 12px;
-    border: none;
-    background: var(--surface);
-    color: var(--green);
-    font-family: inherit;
-    font-size: 12px;
-    outline: none;
-  }
-  .add-form input::placeholder { color: var(--text-muted); }
-  .add-form input:focus { background: #0f0f0f; }
-  .add-form input[name="key"] { flex: 1; min-width: 200px; }
-  .add-form input[name="label"] { width: 160px; }
+    .pulse {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: blink 2s infinite;
+    }
 
-  /* --- BUTTONS --- */
-  button {
-    padding: 10px 16px;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .btn-primary {
-    background: var(--green-faint);
-    color: var(--green);
-    border: 1px solid var(--green-muted);
-  }
-  .btn-danger {
-    background: var(--red-dim);
-    color: var(--red);
-    border: 1px solid #441010;
-  }
-  .btn-sm {
-    padding: 4px 8px;
-    font-size: 10px;
-  }
+    @keyframes blink {
 
-  /* --- TABLE --- */
-  .table-wrap {
-    border: 1px solid var(--border);
-    overflow-x: auto;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-  }
-  th, td {
-    padding: 10px 12px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-  th {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    background: var(--surface);
-  }
-  td { color: var(--text-dim); }
-  tr:last-child td { border-bottom: none; }
+      0%,
+      100% {
+        opacity: 1;
+      }
 
-  .badge {
-    display: inline-block;
-    padding: 2px 6px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .5px;
-    text-transform: uppercase;
-    border: 1px solid;
-  }
-  .badge-active {
-    color: var(--green);
-    border-color: var(--green-muted);
-    background: var(--green-faint);
-  }
-  .badge-inactive {
-    color: var(--text-muted);
-    border-color: var(--border);
-    background: transparent;
-  }
+      50% {
+        opacity: .3;
+      }
+    }
 
-  /* --- CHART --- */
-  .chart-container {
-    height: 180px;
-    display: flex;
-    align-items: flex-end;
-    gap: 2px;
-    padding: 12px 0;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    padding: 16px 12px 8px;
-  }
-  .chart-bar-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 100%;
-    justify-content: flex-end;
-  }
-  .chart-bar {
-    width: 100%;
-    max-width: 24px;
-    background: var(--green-muted);
-    min-height: 1px;
-  }
-  .chart-label {
-    font-size: 9px;
-    color: var(--text-muted);
-    margin-top: 6px;
-  }
-  .chart-count {
-    font-size: 9px;
-    color: var(--text-dim);
-    margin-bottom: 3px;
-  }
+    /* --- STATS --- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
 
-  /* --- MISC --- */
-  .empty {
-    color: var(--text-muted);
-    padding: 24px 0;
-    text-align: center;
-    font-size: 11px;
-  }
-  .error-rate { color: var(--red); }
-  .actions { display: flex; gap: 4px; }
-  .key-cell { color: var(--text-muted); }
+    .stat-card {
+      background: var(--surface);
+      padding: 20px 16px;
+    }
 
-  .footer {
-    font-size: 10px;
-    color: var(--text-muted);
-    text-align: right;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-  }
+    .stat-card .label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+    }
 
-  @media (max-width: 700px) {
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .add-form { flex-wrap: wrap; }
-    .add-form input[name="key"] { min-width: 100%; }
-    th, td { padding: 6px 8px; }
-  }
-</style>
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: -1px;
+    }
+
+    /* --- SECTIONS --- */
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-header {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    /* --- FORM --- */
+    .add-form {
+      display: flex;
+      gap: 1px;
+      margin-bottom: 16px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    .add-form input {
+      padding: 10px 12px;
+      border: none;
+      background: var(--surface);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .add-form input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .add-form input:focus {
+      background: #0f0f0f;
+    }
+
+    .add-form input[name="key"] {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .add-form input[name="label"] {
+      width: 160px;
+    }
+
+    /* --- BUTTONS --- */
+    button {
+      padding: 10px 16px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-primary {
+      background: var(--green-faint);
+      color: var(--green);
+      border: 1px solid var(--green-muted);
+    }
+
+    .btn-danger {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid #441010;
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 10px;
+    }
+
+    /* --- TABLE --- */
+    .table-wrap {
+      border: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      background: var(--surface);
+    }
+
+    td {
+      color: var(--text-dim);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+
+    .badge-active {
+      color: var(--green);
+      border-color: var(--green-muted);
+      background: var(--green-faint);
+    }
+
+    .badge-inactive {
+      color: var(--text-muted);
+      border-color: var(--border);
+      background: transparent;
+    }
+
+    /* --- CHART --- */
+    .chart-container {
+      height: 180px;
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      padding: 12px 0;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 16px 12px 8px;
+    }
+
+    .chart-bar-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .chart-bar {
+      width: 100%;
+      max-width: 24px;
+      background: var(--green-muted);
+      min-height: 1px;
+    }
+
+    .chart-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .chart-count {
+      font-size: 9px;
+      color: var(--text-dim);
+      margin-bottom: 3px;
+    }
+
+    /* --- MISC --- */
+    .empty {
+      color: var(--text-muted);
+      padding: 24px 0;
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .error-rate {
+      color: var(--red);
+    }
+
+    .actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .key-cell {
+      color: var(--text-muted);
+    }
+
+    .footer {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: right;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 700px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .add-form {
+        flex-wrap: wrap;
+      }
+
+      .add-form input[name="key"] {
+        min-width: 100%;
+      }
+
+      th,
+      td {
+        padding: 6px 8px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="header">
-  <h1>Anthronim // Yonetim</h1>
-  <div class="header-meta"><span class="pulse"></span>Aktif</div>
-</div>
-
-<div class="stats-grid">
-  <div class="stat-card">
-    <div class="label">Toplam Istek</div>
-    <div class="value" id="totalRequests">-</div>
+  <div class="header">
+    <h1>Anthronim // Yönetim</h1>
+    <div class="header-meta"><span class="pulse"></span>Aktif</div>
   </div>
-  <div class="stat-card">
-    <div class="label">Son 24 Saat</div>
-    <div class="value" id="todayRequests">-</div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Toplam İstek</div>
+      <div class="value" id="totalRequests">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Son 24 Saat</div>
+      <div class="value" id="todayRequests">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Aktif Anahtar</div>
+      <div class="value" id="activeKeys">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Aktif Token</div>
+      <div class="value" id="activeTokens">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Hata Oranı</div>
+      <div class="value" id="errorRate">-</div>
+    </div>
   </div>
-  <div class="stat-card">
-    <div class="label">Aktif Anahtar</div>
-    <div class="value" id="activeKeys">-</div>
+
+  <div class="section">
+    <div class="section-header">API Anahtarları</div>
+    <form class="add-form" id="addKeyForm">
+      <input type="text" name="key" placeholder="nvapi-..." required>
+      <input type="text" name="label" placeholder="etiket">
+      <button type="submit" class="btn-primary">Ekle</button>
+    </form>
+    <div id="keysContainer">
+      <div class="empty">Yükleniyor...</div>
+    </div>
   </div>
-  <div class="stat-card">
-    <div class="label">Aktif Token</div>
-    <div class="value" id="activeTokens">-</div>
+
+  <div class="section">
+    <div class="section-header">Erişim Anahtarları</div>
+    <form class="add-form" id="addTokenForm">
+      <input type="text" name="token" placeholder="hermes-..." required>
+      <input type="text" name="label" placeholder="etiket">
+      <button type="button" class="btn-primary" onclick="generateToken()">Uret</button>
+      <button type="submit" class="btn-primary">Ekle</button>
+    </form>
+    <div id="tokensContainer">
+      <div class="empty">Yükleniyor...</div>
+    </div>
   </div>
-  <div class="stat-card">
-    <div class="label">Hata Orani</div>
-    <div class="value" id="errorRate">-</div>
+
+  <div class="section">
+    <div class="section-header">Saatlik İstek Grafiği / Son 24 Saat</div>
+    <div class="chart-container" id="hourlyChart">
+      <div class="empty">Yükleniyor...</div>
+    </div>
   </div>
-</div>
 
-<div class="section">
-  <div class="section-header">API Anahtarlari</div>
-  <form class="add-form" id="addKeyForm">
-    <input type="text" name="key" placeholder="nvapi-..." required>
-    <input type="text" name="label" placeholder="etiket">
-    <button type="submit" class="btn-primary">Ekle</button>
-  </form>
-  <div id="keysContainer">
-    <div class="empty">Yukleniyor...</div>
+  <div class="section">
+    <div class="section-header">Model Kullanımı</div>
+    <div id="modelStats">
+      <div class="empty">Yükleniyor...</div>
+    </div>
   </div>
-</div>
 
-<div class="section">
-  <div class="section-header">Erisim Anahtarlari</div>
-  <form class="add-form" id="addTokenForm">
-    <input type="text" name="token" placeholder="hermes-..." required>
-    <input type="text" name="label" placeholder="etiket">
-    <button type="button" class="btn-primary" onclick="generateToken()">Uret</button>
-    <button type="submit" class="btn-primary">Ekle</button>
-  </form>
-  <div id="tokensContainer">
-    <div class="empty">Yukleniyor...</div>
-  </div>
-</div>
+  <div class="footer">Otomatik yenileme: 30s</div>
 
-<div class="section">
-  <div class="section-header">Saatlik Istek Grafigi / Son 24 Saat</div>
-  <div class="chart-container" id="hourlyChart">
-    <div class="empty">Yukleniyor...</div>
-  </div>
-</div>
+  <script>
+    const API_BASE = '/admin/api';
 
-<div class="section">
-  <div class="section-header">Model Kullanimi</div>
-  <div id="modelStats">
-    <div class="empty">Yukleniyor...</div>
-  </div>
-</div>
+    async function apiFetch(path, opts = {}) {
+      const res = await fetch(API_BASE + path, {
+        ...opts,
+        headers: { 'Content-Type': 'application/json', ...opts.headers },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'API hatası');
+      return data;
+    }
 
-<div class="footer">Otomatik yenileme: 30s</div>
+    function generateToken() {
+      const bytes = new Uint8Array(24);
+      crypto.getRandomValues(bytes);
+      const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      document.querySelector('#addTokenForm input[name="token"]').value = 'hermes-' + hex;
+    }
 
-<script>
-const API_BASE = '/admin/api';
+    function formatNumber(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return String(n);
+    }
 
-async function apiFetch(path, opts = {}) {
-  const res = await fetch(API_BASE + path, {
-    ...opts,
-    headers: { 'Content-Type': 'application/json', ...opts.headers },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'API hatasi');
-  return data;
-}
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const d = new Date(dateStr + 'Z');
+      return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
 
-function generateToken() {
-  const bytes = new Uint8Array(24);
-  crypto.getRandomValues(bytes);
-  const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-  document.querySelector('#addTokenForm input[name="token"]').value = 'hermes-' + hex;
-}
+    async function loadStats() {
+      try {
+        const stats = await apiFetch('/stats');
+        document.getElementById('totalRequests').textContent = formatNumber(stats.total_requests);
+        document.getElementById('todayRequests').textContent = formatNumber(stats.today_requests);
+        document.getElementById('activeKeys').textContent = stats.active_keys;
+        document.getElementById('activeTokens').textContent = stats.active_tokens;
+        const errorRate = stats.total_requests > 0
+          ? ((stats.error_requests / stats.total_requests) * 100).toFixed(1) + '%'
+          : '0%';
+        const errorEl = document.getElementById('errorRate');
+        errorEl.textContent = errorRate;
+        if (stats.error_requests > 0) errorEl.classList.add('error-rate');
+        else errorEl.classList.remove('error-rate');
+        renderHourlyChart(stats.hourly);
+        renderModelStats(stats.modelStats);
+      } catch (err) {
+        console.error('İstatistikler yüklenemedi:', err);
+      }
+    }
 
-function formatNumber(n) {
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-  return String(n);
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '-';
-  const d = new Date(dateStr + 'Z');
-  return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
-
-async function loadStats() {
-  try {
-    const stats = await apiFetch('/stats');
-    document.getElementById('totalRequests').textContent = formatNumber(stats.total_requests);
-    document.getElementById('todayRequests').textContent = formatNumber(stats.today_requests);
-    document.getElementById('activeKeys').textContent = stats.active_keys;
-    document.getElementById('activeTokens').textContent = stats.active_tokens;
-    const errorRate = stats.total_requests > 0
-      ? ((stats.error_requests / stats.total_requests) * 100).toFixed(1) + '%'
-      : '0%';
-    const errorEl = document.getElementById('errorRate');
-    errorEl.textContent = errorRate;
-    if (stats.error_requests > 0) errorEl.classList.add('error-rate');
-    else errorEl.classList.remove('error-rate');
-    renderHourlyChart(stats.hourly);
-    renderModelStats(stats.modelStats);
-  } catch (err) {
-    console.error('Stats yuklenemedi:', err);
-  }
-}
-
-function renderHourlyChart(hourly) {
-  const container = document.getElementById('hourlyChart');
-  if (!hourly || hourly.length === 0) {
-    container.innerHTML = '<div class="empty">Henuz veri yok</div>';
-    return;
-  }
-  const max = Math.max(...hourly.map(h => h.count), 1);
-  container.innerHTML = hourly.map(h => {
-    const pct = (h.count / max) * 100;
-    const hour = h.hour.slice(11, 16);
-    return `<div class="chart-bar-wrapper">
+    function renderHourlyChart(hourly) {
+      const container = document.getElementById('hourlyChart');
+      if (!hourly || hourly.length === 0) {
+        container.innerHTML = '<div class="empty">Henüz veri yok</div>';
+        return;
+      }
+      const max = Math.max(...hourly.map(h => h.count), 1);
+      container.innerHTML = hourly.map(h => {
+        const pct = (h.count / max) * 100;
+        const hour = h.hour.slice(11, 16);
+        return `<div class="chart-bar-wrapper">
       <div class="chart-count">${h.count}</div>
       <div class="chart-bar" style="height:${Math.max(pct, 2)}%"></div>
       <div class="chart-label">${hour}</div>
     </div>`;
-  }).join('');
-}
-
-function renderModelStats(models) {
-  const container = document.getElementById('modelStats');
-  if (!models || models.length === 0) {
-    container.innerHTML = '<div class="empty">Henuz veri yok</div>';
-    return;
-  }
-  container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Model</th><th>Istek</th></tr></thead><tbody>' +
-    models.map(m => `<tr><td>${escHtml(m.model || 'bilinmeyen')}</td><td>${formatNumber(m.count)}</td></tr>`).join('') +
-    '</tbody></table></div>';
-}
-
-async function loadKeys() {
-  try {
-    const keys = await apiFetch('/keys');
-    const container = document.getElementById('keysContainer');
-    if (keys.length === 0) {
-      container.innerHTML = '<div class="empty">Henuz API anahtari eklenmedi</div>';
-      return;
+      }).join('');
     }
-    container.innerHTML = `<div class="table-wrap"><table>
+
+    function renderModelStats(models) {
+      const container = document.getElementById('modelStats');
+      if (!models || models.length === 0) {
+        container.innerHTML = '<div class="empty">Henüz veri yok</div>';
+        return;
+      }
+      container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Model</th><th>İstek</th></tr></thead><tbody>' +
+        models.map(m => `<tr><td>${escHtml(m.model || 'bilinmeyen')}</td><td>${formatNumber(m.count)}</td></tr>`).join('') +
+        '</tbody></table></div>';
+    }
+
+    async function loadKeys() {
+      try {
+        const keys = await apiFetch('/keys');
+        const container = document.getElementById('keysContainer');
+        if (keys.length === 0) {
+          container.innerHTML = '<div class="empty">Henüz API anahtarı eklenmedi</div>';
+          return;
+        }
+        container.innerHTML = `<div class="table-wrap"><table>
       <thead><tr>
         <th>Etiket</th>
         <th>Anahtar</th>
         <th>Durum</th>
-        <th>Istek</th>
+        <th>İstek</th>
         <th>Hata</th>
-        <th>Son Kullanim</th>
-        <th>Islem</th>
+        <th>Son Kullanım</th>
+        <th>İşlem</th>
       </tr></thead>
       <tbody>${keys.map(k => `<tr>
         <td>${escHtml(k.label || '-')}</td>
@@ -446,73 +522,73 @@ async function loadKeys() {
         <td>${k.error_count > 0 ? '<span class="error-rate">' + formatNumber(k.error_count) + '</span>' : '0'}</td>
         <td>${formatDate(k.last_used_at)}</td>
         <td class="actions">
-          <button class="btn-sm ${k.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleKey(${k.id}, ${!k.is_active})">${k.is_active ? 'Devre Disi' : 'Etkinlestir'}</button>
+          <button class="btn-sm ${k.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleKey(${k.id}, ${!k.is_active})">${k.is_active ? 'Devre Dışı' : 'Etkinleştir'}</button>
           <button class="btn-sm btn-danger" onclick="deleteKey(${k.id})">Sil</button>
         </td>
       </tr>`).join('')}</tbody>
     </table></div>`;
-  } catch (err) {
-    console.error('Key listesi yuklenemedi:', err);
-  }
-}
-
-function escHtml(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-async function toggleKey(id, isActive) {
-  try {
-    await apiFetch('/keys/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
-    await refresh();
-  } catch (err) {
-    alert('Hata: ' + err.message);
-  }
-}
-
-async function deleteKey(id) {
-  if (!confirm('Bu API anahtarini silmek istediginizden emin misiniz?')) return;
-  try {
-    await apiFetch('/keys/' + id, { method: 'DELETE' });
-    await refresh();
-  } catch (err) {
-    alert('Hata: ' + err.message);
-  }
-}
-
-document.getElementById('addKeyForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const key = form.key.value.trim();
-  const label = form.label.value.trim();
-  if (!key) return;
-  try {
-    await apiFetch('/keys', { method: 'POST', body: JSON.stringify({ key, label }) });
-    form.reset();
-    await refresh();
-  } catch (err) {
-    alert('Hata: ' + err.message);
-  }
-});
-
-async function loadTokens() {
-  try {
-    const tokens = await apiFetch('/tokens');
-    const container = document.getElementById('tokensContainer');
-    if (tokens.length === 0) {
-      container.innerHTML = '<div class="empty">Henuz erisim anahtari eklenmedi</div>';
-      return;
+      } catch (err) {
+        console.error('API anahtarları yüklenemedi:', err);
+      }
     }
-    container.innerHTML = `<div class="table-wrap"><table>
+
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    async function toggleKey(id, isActive) {
+      try {
+        await apiFetch('/keys/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+        await refresh();
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    }
+
+    async function deleteKey(id) {
+      if (!confirm('Bu API anahtarını silmek istediğinizden emin misiniz?')) return;
+      try {
+        await apiFetch('/keys/' + id, { method: 'DELETE' });
+        await refresh();
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    }
+
+    document.getElementById('addKeyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const key = form.key.value.trim();
+      const label = form.label.value.trim();
+      if (!key) return;
+      try {
+        await apiFetch('/keys', { method: 'POST', body: JSON.stringify({ key, label }) });
+        form.reset();
+        await refresh();
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    });
+
+    async function loadTokens() {
+      try {
+        const tokens = await apiFetch('/tokens');
+        const container = document.getElementById('tokensContainer');
+        if (tokens.length === 0) {
+          container.innerHTML = '<div class="empty">Henüz erişim anahtarı eklenmedi</div>';
+          return;
+        }
+        container.innerHTML = `<div class="table-wrap"><table>
       <thead><tr>
         <th>Etiket</th>
         <th>Token</th>
         <th>Durum</th>
-        <th>Istek</th>
+        <th>İstek</th>
         <th>Hata</th>
-        <th>Son Kullanim</th>
-        <th>Islem</th>
+        <th>Son Kullanım</th>
+        <th>İşlem</th>
       </tr></thead>
       <tbody>${tokens.map(t => `<tr>
         <td>${escHtml(t.label || '-')}</td>
@@ -522,56 +598,57 @@ async function loadTokens() {
         <td>${t.error_count > 0 ? '<span class="error-rate">' + formatNumber(t.error_count) + '</span>' : '0'}</td>
         <td>${formatDate(t.last_used_at)}</td>
         <td class="actions">
-          <button class="btn-sm ${t.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleToken(${t.id}, ${!t.is_active})">${t.is_active ? 'Devre Disi' : 'Etkinlestir'}</button>
+          <button class="btn-sm ${t.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleToken(${t.id}, ${!t.is_active})">${t.is_active ? 'Devre Dışı' : 'Etkinleştir'}</button>
           <button class="btn-sm btn-danger" onclick="deleteToken(${t.id})">Sil</button>
         </td>
       </tr>`).join('')}</tbody>
     </table></div>`;
-  } catch (err) {
-    console.error('Token listesi yuklenemedi:', err);
-  }
-}
+      } catch (err) {
+        console.error('Erişim anahtarı listesi yüklenemedi:', err);
+      }
+    }
 
-async function toggleToken(id, isActive) {
-  try {
-    await apiFetch('/tokens/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
-    await refresh();
-  } catch (err) {
-    alert('Hata: ' + err.message);
-  }
-}
+    async function toggleToken(id, isActive) {
+      try {
+        await apiFetch('/tokens/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+        await refresh();
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    }
 
-async function deleteToken(id) {
-  if (!confirm('Bu erisim anahtarini silmek istediginizden emin misiniz?')) return;
-  try {
-    await apiFetch('/tokens/' + id, { method: 'DELETE' });
-    await refresh();
-  } catch (err) {
-    alert('Hata: ' + err.message);
-  }
-}
+    async function deleteToken(id) {
+      if (!confirm('Bu erişim anahtarını silmek istediğinizden emin misiniz?')) return;
+      try {
+        await apiFetch('/tokens/' + id, { method: 'DELETE' });
+        await refresh();
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    }
 
-document.getElementById('addTokenForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const token = form.token.value.trim();
-  const label = form.label.value.trim();
-  if (!token) return;
-  try {
-    await apiFetch('/tokens', { method: 'POST', body: JSON.stringify({ token, label }) });
-    form.reset();
-    await refresh();
-  } catch (err) {
-    alert('Hata: ' + err.message);
-  }
-});
+    document.getElementById('addTokenForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const token = form.token.value.trim();
+      const label = form.label.value.trim();
+      if (!token) return;
+      try {
+        await apiFetch('/tokens', { method: 'POST', body: JSON.stringify({ token, label }) });
+        form.reset();
+        await refresh();
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    });
 
-async function refresh() {
-  await Promise.all([loadStats(), loadKeys(), loadTokens()]);
-}
+    async function refresh() {
+      await Promise.all([loadStats(), loadKeys(), loadTokens()]);
+    }
 
-refresh();
-setInterval(refresh, 30000);
-</script>
+    refresh();
+    setInterval(refresh, 30000);
+  </script>
 </body>
+
 </html>

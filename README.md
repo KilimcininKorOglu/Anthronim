@@ -9,8 +9,8 @@ NVIDIA NIM'in OpenAI uyumlu uç noktasını Anthropic Messages API olarak sunan 
 - Araç kullanım döngüsü uçtan uca. `tool_use` ↔ `tool_calls` dönüşümü, akışta aşamalı `input_json_delta` olayları dahil tam olarak desteklenir.
 - Anthropic `image` blokları OpenAI `image_url` data URL biçimine çevrilir.
 - Opsiyonel `AUTH_TOKEN` ile erişim anahtarı kimlik doğrulaması.
-- API anahtarı havuzu: birden fazla NVIDIA anahtarını yonetin, round-robin ile dagıtın.
-- Yonetim paneli: anahtar CRUD, istek istatistikleri, saatlik grafik (`/admin`).
+- API anahtarı havuzu: birden fazla NVIDIA anahtarını yönetin, round-robin ile dağıtın.
+- Yönetim paneli: anahtar CRUD, istek istatistikleri, saatlik grafik (`/admin`).
 
 ## Gereksinimler
 
@@ -43,7 +43,7 @@ chmod 600 .env
 
 ```
 NVIDIA_API_KEY=nvapi-...
-AUTH_TOKEN=erisim-anahtari
+AUTH_TOKEN=erişim-anahtari
 PORT=8787
 HOST=0.0.0.0
 ```
@@ -100,8 +100,8 @@ Oturum içinde model geçişi `/model opus`, `/model sonnet` veya `/model haiku`
 | `AUTH_TOKEN`     | Hayır   | —          | Erişim anahtarı (yedek). DB'de token varsa opsiyonel.                         |
 | `PORT`           | Hayır   | `8787`     | HTTP sunucusunun dinleyeceği port.                                            |
 | `HOST`           | Hayır   | `0.0.0.0`  | HTTP sunucusunun bağlanacağı arayüz.                                          |
-| `ADMIN_USER`     | Hayır   | —          | Yonetim paneli kullanıcı adı. `ADMIN_PASS` ile birlikte ayarlanmalı.          |
-| `ADMIN_PASS`     | Hayır   | —          | Yonetim paneli şifresi. `ADMIN_USER` ile birlikte ayarlanmalı.                |
+| `ADMIN_USER`     | Hayır   | —          | Yönetim paneli kullanıcı adı. `ADMIN_PASS` ile birlikte ayarlanmalı.          |
+| `ADMIN_PASS`     | Hayır   | —          | Yönetim paneli şifresi. `ADMIN_USER` ile birlikte ayarlanmalı.                |
 
 Shell ortamında tanımlı bir değişken, aynı adı taşıyan `.env` girdisinin önüne geçer.
 
@@ -113,7 +113,7 @@ Shell ortamında tanımlı bir değişken, aynı adı taşıyan `.env` girdisini
 | GET           | `/v1/models`           | Boş liste döner. Model seçimi istemci ortam değişkenlerinden yapılır.              |
 | GET           | `/health`, `/`         | Canlılık kontrolü, `{ "status": "ok" }` döner.                                   |
 | OPTIONS       | `*`                    | CORS ön kontrolü.                                                                 |
-| GET           | `/admin`               | Yonetim paneli arayüzü (Basic Auth).                                              |
+| GET           | `/admin`               | Yönetim paneli arayüzü (Basic Auth).                                              |
 | GET           | `/admin/api/stats`     | Toplam istatistikler JSON.                                                        |
 | GET           | `/admin/api/keys`      | API anahtarı listesi (maskelenmiş).                                               |
 | POST          | `/admin/api/keys`      | Yeni API anahtarı ekle. `{ "key": "...", "label": "..." }`                        |
@@ -140,30 +140,30 @@ Tam katalog: `build.nvidia.com/models`.
 
 ## API Anahtarı Havuzu
 
-Proxy birden fazla NVIDIA API anahtarını destekler. Anahtarlar SQLite veritabanında (`anthronim.db`) saklanır ve istekler arasında round-robin ile dagıtılır.
+Proxy birden fazla NVIDIA API anahtarını destekler. Anahtarlar SQLite veritabanında (`anthronim.db`) saklanır ve istekler arasında round-robin ile dağıtılır.
 
-- Veritabanında anahtar varsa `NVIDIA_API_KEY` ortam degiskeni opsiyoneldir.
-- Hem ortam degiskeni hem veritabanı boşsa sunucu başlangıçta hata verir.
-- Ortam degiskeninden gelen anahtar, veritabanında anahtar yoksa yedek olarak kullanılır.
-- Devre dışı bırakılan anahtarlar dagıtıma dahil edilmez.
+- Veritabanında anahtar varsa `NVIDIA_API_KEY` ortam değişkeni opsiyoneldir.
+- Hem ortam değişkeni hem veritabanı boşsa sunucu başlangıçta hata verir.
+- Ortam değişkeninden gelen anahtar, veritabanında anahtar yoksa yedek olarak kullanılır.
+- Devre dışı bırakılan anahtarlar dağıtıma dahil edilmez.
 
-## Yonetim Paneli
+## Yönetim Paneli
 
-`ADMIN_USER` ve `ADMIN_PASS` ortam degiskenleri ayarlandıgında `/admin` yolu aktif olur. Tarayıcı HTTP Basic Auth penceresi gösterir.
+`ADMIN_USER` ve `ADMIN_PASS` ortam değişkenleri ayarlandığında `/admin` yolu aktif olur. Tarayıcı HTTP Basic Auth penceresi gösterir.
 
 Panel sunar:
-- Istek istatistikleri (toplam, son 24 saat, aktif anahtar/token, hata oranı)
-- API anahtarı yonetimi (ekleme, silme, etkinlestirme/devre dısı bırakma)
-- Erisim anahtarı (token) yonetimi (ekleme, silme, etkinlestirme/devre dısı bırakma)
+- İstek istatistikleri (toplam, son 24 saat, aktif anahtar/token, hata oranı)
+- API anahtarı yönetimi (ekleme, silme, etkinleştirme/devre dışı bırakma)
+- Erişim anahtarı (token) yönetimi (ekleme, silme, etkinleştirme/devre dışı bırakma)
 - Token bazlı istek istatistikleri
-- Saatlik istek grafigi (son 24 saat)
-- Model bazlı kullanım dagılımı
+- Saatlik istek grafiği (son 24 saat)
+- Model bazlı kullanım dağılımı
 
-Erisim anahtarları DB'den yonetildiginde `AUTH_TOKEN` ortam degiskeni yedek olarak kalır. DB'de aktif token varsa, istemciler `x-api-key` veya `Authorization: Bearer` baslıgıyla eslesen bir token gondermelidir.
+Erişim anahtarları DB'den yönetildiğinde `AUTH_TOKEN` ortam değişkeni yedek olarak kalır. DB'de aktif token varsa, istemciler `x-api-key` veya `Authorization: Bearer` başlığıyla eşleşen bir token göndermelidir.
 
-Admin kimlik dogrulaması (Basic Auth), proxy erisim anahtarından bagımsızdır.
+Admin kimlik doğrulaması (Basic Auth), proxy erişim anahtarından bağımsızdır.
 
-HTTP Basic Auth base64 kodlaması kullanır; üretim ortamında TLS (reverse proxy) ardında çalıştırılması onerilir.
+HTTP Basic Auth base64 kodlaması kullanır; üretim ortamında TLS (reverse proxy) ardında çalıştırılması önerilir.
 
 ## Lisans
 
