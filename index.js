@@ -226,6 +226,11 @@ async function readJsonBody(req) {
 async function handleMessages(req, res, authTokenId) {
   const body = await readJsonBody(req);
 
+  if (!body.messages || !Array.isArray(body.messages)) {
+    sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'messages alanı zorunlu' } });
+    return;
+  }
+
   const messages = [];
   if (body.system) {
     const systemContent = typeof body.system === 'string'
