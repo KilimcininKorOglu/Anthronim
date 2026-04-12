@@ -8,7 +8,7 @@ NVIDIA NIM'in OpenAI uyumlu uç noktasını Anthropic Messages API olarak sunan 
 - Çift kanallı akıl yürütme desteği: hem yerel `reasoning_content` delta'ları hem de satır içi `<think>...</think>` etiketleri Anthropic `thinking` bloklarına çevrilir.
 - Araç kullanım döngüsü uçtan uca. `tool_use` ↔ `tool_calls` dönüşümü, akışta aşamalı `input_json_delta` olayları dahil tam olarak desteklenir.
 - Anthropic `image` blokları OpenAI `image_url` data URL biçimine çevrilir.
-- Opsiyonel `AUTH_TOKEN` ile paylaşılan sır kimlik doğrulaması.
+- Opsiyonel `AUTH_TOKEN` ile erişim anahtarı kimlik doğrulaması.
 
 ## Gereksinimler
 
@@ -35,7 +35,7 @@ chmod 600 .env
 
 ```
 NVIDIA_API_KEY=nvapi-...
-AUTH_TOKEN=paylaşılan-sır
+AUTH_TOKEN=erisim-anahtari
 PORT=8787
 HOST=0.0.0.0
 ```
