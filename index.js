@@ -314,11 +314,13 @@ async function handleMessages(req, res, authTokenId) {
 
   if (message.tool_calls?.length) {
     for (const tc of message.tool_calls) {
+      let parsedInput;
+      try { parsedInput = JSON.parse(tc.function.arguments); } catch (e) { parsedInput = {}; }
       content.push({
         type: 'tool_use',
         id: tc.id,
         name: tc.function.name,
-        input: JSON.parse(tc.function.arguments),
+        input: parsedInput,
       });
     }
   }
