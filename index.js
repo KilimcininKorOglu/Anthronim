@@ -376,7 +376,7 @@ async function handleStream(upstream, model, res) {
   };
 
   const processContent = async (text) => {
-    // Kip belirlendi ve think etiketi içinde değiliz; doğrudan gönder.
+    // Mode decided and not inside think tag; send directly.
     if (modeDecided && !inThinkTag) {
       await sendText(text);
       return;
@@ -384,7 +384,7 @@ async function handleStream(upstream, model, res) {
 
     contentBuffer += text;
 
-    // İlk karar: içerik <think> ile mi başlıyor?
+    // First decision: does content start with <think>?
     if (!modeDecided && contentBuffer.length >= 7) {
       if (contentBuffer.startsWith('<think>')) {
         inThinkTag = true;
@@ -393,10 +393,10 @@ async function handleStream(upstream, model, res) {
       modeDecided = true;
     }
 
-    // Karar için hâlâ yeterli karakter birikmedi.
+    // Not enough characters yet to decide.
     if (!modeDecided) return;
 
-    // Think etiketi içindeyiz.
+    // Inside think tag.
     if (inThinkTag) {
       const endIdx = contentBuffer.indexOf('</think>');
       if (endIdx !== -1) {
@@ -410,7 +410,7 @@ async function handleStream(upstream, model, res) {
         contentBuffer = contentBuffer.slice(-8);
       }
     } else {
-      // Think etiketi dışındayız; tamponun tamamını doğrudan gönder.
+      // Outside think tag; flush entire buffer directly.
       if (contentBuffer) {
         await sendText(contentBuffer);
         contentBuffer = '';
