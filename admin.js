@@ -8,6 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASS = process.env.ADMIN_PASS;
+const AUTH_TOKEN_ENV = process.env.AUTH_TOKEN;
 const adminEnabled = !!(ADMIN_USER && ADMIN_PASS);
 
 const NVIDIA_MODELS_URL = 'https://integrate.api.nvidia.com/v1/models';
@@ -242,6 +243,10 @@ export async function handleAdmin(req, res, pathname) {
     const id = extractIdFromPath(pathname);
     if (isNaN(id)) {
       sendJson(res, 400, { error: 'Geçersiz ID' });
+      return;
+    }
+    if (listTokens().length <= 1 && !AUTH_TOKEN_ENV) {
+      sendJson(res, 400, { error: 'Son erişim anahtarı silinemez — AUTH_TOKEN ortam değişkeni tanımlı değil' });
       return;
     }
     const removed = removeToken(id);
