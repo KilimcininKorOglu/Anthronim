@@ -312,8 +312,9 @@
 <div class="section">
   <div class="section-header">Erisim Anahtarlari</div>
   <form class="add-form" id="addTokenForm">
-    <input type="text" name="token" placeholder="token-..." required>
+    <input type="text" name="token" placeholder="hermes-..." required>
     <input type="text" name="label" placeholder="etiket">
+    <button type="button" class="btn-primary" onclick="generateToken()">Uret</button>
     <button type="submit" class="btn-primary">Ekle</button>
   </form>
   <div id="tokensContainer">
@@ -348,6 +349,13 @@ async function apiFetch(path, opts = {}) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'API hatasi');
   return data;
+}
+
+function generateToken() {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  document.querySelector('#addTokenForm input[name="token"]').value = 'hermes-' + hex;
 }
 
 function formatNumber(n) {
