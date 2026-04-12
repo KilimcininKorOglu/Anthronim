@@ -1,7 +1,10 @@
 import http from 'node:http';
 import fs from 'node:fs';
+import { initDb, getNextKey, logRequest, hasKeys } from './db.js';
+import { handleAdmin } from './admin.js';
 
 loadDotEnv();
+initDb();
 
 const API_BASE = 'https://integrate.api.nvidia.com/v1';
 const PORT = parseInt(process.env.PORT || '8787', 10);
@@ -9,14 +12,14 @@ const HOST = process.env.HOST || '0.0.0.0';
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const AUTH_TOKEN = process.env.AUTH_TOKEN;
 
-if (!NVIDIA_API_KEY) {
-  console.error('Hata: NVIDIA_API_KEY ortam değişkeni ayarlanmamış.');
+if (!NVIDIA_API_KEY && !hasKeys()) {
+  console.error('Hata: NVIDIA_API_KEY ortam değişkeni ayarlanmamış ve veritabanında API anahtarı yok.');
   process.exit(1);
 }
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key, anthropic-version',
 };
 
@@ -39,6 +42,11 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     if (req.method === 'OPTIONS') {
       res.writeHead(204, PREFLIGHT_HEADERS);
       res.end();
+      return;
+    }
+
+    if (pathname.startsWith('/admin')) {
+      await handleAdmin(req, res, pathname);
       return;
     }
 
@@ -165,14 +173,24 @@ async function handleMessages(req, res) {
     }
   }
 
+  const keyEntry = getNextKey(NVIDIA_API_KEY);
+  if (!keyEntry) {
+    sendJson(res, 503, { error: { type: 'service_error', message: 'Kullanılabilir API anahtarı yok' } });
+    return;
+  }
+
   const upstream = await fetch(`${API_BASE}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${NVIDIA_API_KEY}`,
+      'Authorization': `Bearer ${keyEntry.key}`,
     },
     body: JSON.stringify(payload),
   });
+
+  if (keyEntry.id !== null) {
+    logRequest(keyEntry.id, body.model, !!body.stream, upstream.status);
+  }
 
   if (!upstream.ok) {
     sendJson(res, upstream.status, { error: { type: 'api_error', message: await upstream.text() } });
