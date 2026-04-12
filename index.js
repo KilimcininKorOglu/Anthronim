@@ -103,9 +103,15 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
 
     sendJson(res, 404, { error: { type: 'not_found', message: 'Bulunamadı' } });
   } catch (err) {
-    console.error('İstek işleme hatası:', err);
     if (!res.headersSent) {
-      sendJson(res, 500, { error: { type: 'internal_error', message: 'Sunucu hatası' } });
+      if (err.statusCode === 413) {
+        sendJson(res, 413, { error: { type: 'invalid_request_error', message: 'İstek gövdesi çok büyük' } });
+      } else if (err instanceof SyntaxError) {
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'Geçersiz JSON gövdesi' } });
+      } else {
+        console.error('İstek işleme hatası:', err);
+        sendJson(res, 500, { error: { type: 'internal_error', message: 'Sunucu hatası' } });
+      }
     } else {
       res.end();
     }
@@ -197,9 +203,17 @@ function loadDotEnv() {
   }
 }
 
+const MAX_BODY = 10 * 1024 * 1024;
+
 async function readJsonBody(req) {
   const chunks = [];
+  let size = 0;
   for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_BODY) {
+      req.destroy();
+      throw Object.assign(new Error('Body too large'), { statusCode: 413 });
+    }
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));

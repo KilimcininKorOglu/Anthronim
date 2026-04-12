@@ -55,9 +55,17 @@ function maskKey(key) {
   return key.slice(0, 8) + '****...' + key.slice(-4);
 }
 
+const MAX_BODY = 1 * 1024 * 1024;
+
 async function readJsonBody(req) {
   const chunks = [];
+  let size = 0;
   for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_BODY) {
+      req.destroy();
+      throw Object.assign(new Error('Body too large'), { statusCode: 413 });
+    }
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
