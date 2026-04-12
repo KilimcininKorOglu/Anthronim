@@ -1,9 +1,20 @@
 import Database from 'better-sqlite3';
+import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || join(__dirname, 'anthronim.db');
+
+function safeEqual(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return timingSafeEqual(bufA, bufB);
+}
 
 let db;
 let cachedKeys = null;
@@ -198,7 +209,7 @@ export function validateToken(token, envFallback) {
   if (map.has(token)) {
     return { id: map.get(token), valid: true };
   }
-  if (envFallback && token === envFallback) {
+  if (envFallback && safeEqual(token, envFallback)) {
     return { id: null, valid: true };
   }
   return { id: null, valid: false };

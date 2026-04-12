@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { addKey, removeKey, toggleKey, listKeys, getStats, addToken, removeToken, toggleToken, listTokens } from './db.js';
@@ -38,7 +39,17 @@ function checkBasicAuth(req) {
   if (colon === -1) return false;
   const user = decoded.slice(0, colon);
   const pass = decoded.slice(colon + 1);
-  return user === ADMIN_USER && pass === ADMIN_PASS;
+  return safeEqual(user, ADMIN_USER) && safeEqual(pass, ADMIN_PASS);
+}
+
+function safeEqual(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return timingSafeEqual(bufA, bufB);
 }
 
 function requireAuth(req, res) {
