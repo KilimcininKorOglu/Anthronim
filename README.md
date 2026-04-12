@@ -1,21 +1,23 @@
 # Anthronim
 
-NVIDIA NIM'in OpenAI uyumlu uç noktasını Anthropic Messages API olarak sunan tek dosyalık bir Node.js proxy'sidir. Claude Code ve Anthropic formatını konuşan diğer istemciler, herhangi bir kod değişikliği olmadan NVIDIA tarafında barındırılan açık kaynak modelleri (Minimax, GLM, Llama, DeepSeek, Qwen) bu sunucu üzerinden çağırabilir.
+NVIDIA NIM'in OpenAI uyumlu uç noktasını Anthropic Messages API olarak sunan bir Node.js proxy'sidir. Claude Code ve Anthropic formatını konuşan diğer istemciler, herhangi bir kod değişikliği olmadan NVIDIA tarafında barındırılan açık kaynak modelleri (Minimax, GLM, Llama, DeepSeek, Qwen vb.) bu sunucu üzerinden çağırabilir.
 
 ## Özellikler
 
-- Tek dosya proxy, minimal bağımlılık (`better-sqlite3`), framework yok. Yalnızca Node.js 20 veya üzeri gerektirir.
+- Node.js 20+, tek dış bağımlılık (`better-sqlite3`), framework yok.
 - Çift kanallı akıl yürütme desteği: hem yerel `reasoning_content` delta'ları hem de satır içi `<think>...</think>` etiketleri Anthropic `thinking` bloklarına çevrilir.
 - Araç kullanım döngüsü uçtan uca. `tool_use` ↔ `tool_calls` dönüşümü, akışta aşamalı `input_json_delta` olayları dahil tam olarak desteklenir.
 - Anthropic `image` blokları OpenAI `image_url` data URL biçimine çevrilir.
-- Opsiyonel `AUTH_TOKEN` ile erişim anahtarı kimlik doğrulaması.
-- API anahtarı havuzu: birden fazla NVIDIA anahtarını yönetin, round-robin ile dağıtın.
-- Yönetim paneli: anahtar CRUD, istek istatistikleri, saatlik grafik (`/admin`).
+- API anahtarı havuzu: birden fazla NVIDIA anahtarını yönetim panelinden ekleyin, round-robin ile dağıtın.
+- Erişim anahtarı (token) yönetimi: DB'den veya ortam değişkeninden. Birden fazla istemci farklı tokenlarla erişebilir.
+- Yönetim paneli: anahtar/token CRUD, istek istatistikleri, saatlik grafik, model listesi (`/admin`).
+- NVIDIA model kataloğu otomatik çekilir ve Anthropic formatında sunulur (`/v1/models`).
+- Docker desteği: multi-stage build, dev/prod profilleri.
 
 ## Gereksinimler
 
 - Node.js 20 veya üzeri.
-- `build.nvidia.com` üzerinden alınmış bir NVIDIA NIM API anahtarı.
+- NVIDIA NIM API anahtarı (`build.nvidia.com` üzerinden) veya yönetim panelinden eklenmiş anahtarlar.
 
 ## Kurulum
 
@@ -39,11 +41,16 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-`.env` dosyasını açın ve en az `NVIDIA_API_KEY` değerini doldurun:
+`.env` dosyasını açın ve ihtiyacınıza göre doldurun:
 
 ```
-NVIDIA_API_KEY=nvapi-...
-AUTH_TOKEN=erişim-anahtari
+# NVIDIA anahtarı (yönetim panelinden de eklenebilir)
+# NVIDIA_API_KEY=nvapi-...
+
+# Yönetim paneli (opsiyonel)
+ADMIN_USER=admin
+ADMIN_PASS=degistir-beni
+
 PORT=8787
 HOST=0.0.0.0
 ```
@@ -69,9 +76,16 @@ Hızlı sağlık kontrolü:
 curl http://localhost:8787/health
 ```
 
-### Kalıcı Kurulum
+### Docker ile Kurulum
 
-Üretim ortamında `systemd`, `pm2` veya Docker gibi bir süreç yöneticisi kullanın. `.env` dosyasını çalışma dizinine yerleştirin ya da değişkenleri süreç yöneticisinden geçirin.
+```bash
+npm run docker:build   # Image oluştur
+npm run docker:up      # Prod container başlat
+npm run docker:dev     # Dev mode (watch + source mount)
+npm run docker:down    # Durdur
+```
+
+DB dosyaları `./docker-data/` dizininde saklanır. İlk çalıştırmada DB boşsa ve `.env`'de `NVIDIA_API_KEY` yoksa `docker compose run -e NVIDIA_API_KEY=dummy` ile başlatıp yönetim panelinden anahtar ekleyin.
 
 ## Claude Code Yapılandırması
 
@@ -81,62 +95,54 @@ curl http://localhost:8787/health
 {
   "env": {
     "ANTHROPIC_BASE_URL": "http://localhost:8787",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL":   "minimaxai/minimax-m2.1",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimaxai/minimax-m2.1",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL":  "z-ai/glm4.7"
+    "ANTHROPIC_API_KEY": "<erişim anahtarınız>",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL":   "minimaxai/minimax-m2.5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimaxai/minimax-m2.5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL":  "z-ai/glm5"
   }
 }
 ```
 
-Sunucu tarafında `AUTH_TOKEN` ayarlıysa aynı bloğa `"ANTHROPIC_API_KEY": "<token>"` ekleyin; Claude Code bu değeri `x-api-key` başlığı olarak iletir.
+Erişim anahtarı yönetim panelinden veya `AUTH_TOKEN` ortam değişkeninden ayarlanır. Erişim anahtarı tanımlı değilse `ANTHROPIC_API_KEY` satırını kaldırabilirsiniz.
 
 Oturum içinde model geçişi `/model opus`, `/model sonnet` veya `/model haiku` komutlarıyla yapılır. Sunucu `body.model` değerini aynen geçirir; `build.nvidia.com/models` üzerindeki herhangi bir kimlik kod değişikliği gerektirmeden çalışır.
 
 ## Yapılandırma Referansı
 
-| Ortam değişkeni  | Zorunlu | Varsayılan | Amaç                                                                          |
-|------------------|---------|------------|-------------------------------------------------------------------------------|
-| `NVIDIA_API_KEY` | Koşullu | —          | NVIDIA NIM uç noktasına iletilir. DB'de anahtar varsa opsiyonel.              |
-| `AUTH_TOKEN`     | Hayır   | —          | Erişim anahtarı (yedek). DB'de token varsa opsiyonel.                         |
-| `PORT`           | Hayır   | `8787`     | HTTP sunucusunun dinleyeceği port.                                            |
-| `HOST`           | Hayır   | `0.0.0.0`  | HTTP sunucusunun bağlanacağı arayüz.                                          |
-| `ADMIN_USER`     | Hayır   | —          | Yönetim paneli kullanıcı adı. `ADMIN_PASS` ile birlikte ayarlanmalı.          |
-| `ADMIN_PASS`     | Hayır   | —          | Yönetim paneli şifresi. `ADMIN_USER` ile birlikte ayarlanmalı.                |
+| Ortam değişkeni   | Zorunlu | Varsayılan       | Amaç                                                           |
+|--------------------|---------|------------------|----------------------------------------------------------------|
+| `NVIDIA_API_KEY`   | Koşullu | —                | NVIDIA NIM uç noktasına iletilir. DB'de anahtar varsa opsiyonel |
+| `AUTH_TOKEN`       | Hayır   | —                | Erişim anahtarı (yedek). DB'de token varsa opsiyonel            |
+| `PORT`             | Hayır   | `8787`           | HTTP sunucusunun dinleyeceği port                               |
+| `HOST`             | Hayır   | `0.0.0.0`        | HTTP sunucusunun bağlanacağı arayüz                             |
+| `ADMIN_USER`       | Hayır   | —                | Yönetim paneli kullanıcı adı (`ADMIN_PASS` ile birlikte)        |
+| `ADMIN_PASS`       | Hayır   | —                | Yönetim paneli şifresi (`ADMIN_USER` ile birlikte)              |
+| `MODEL_CACHE_TTL`  | Hayır   | `3600000` (1 sa) | NVIDIA model listesi önbellek süresi (ms)                       |
+| `DB_PATH`          | Hayır   | `./anthronim.db` | SQLite dosya yolu (Docker'da `/app/data/anthronim.db`)          |
 
 Shell ortamında tanımlı bir değişken, aynı adı taşıyan `.env` girdisinin önüne geçer.
 
 ## Uç Noktalar
 
-| Yöntem        | Yol                    | Davranış                                                                          |
-|---------------|------------------------|-----------------------------------------------------------------------------------|
-| POST          | `/v1/messages`         | Anthropic Messages API. `stream: true` geldiğinde SSE ile akıtılır.               |
-| GET           | `/v1/models`           | Boş liste döner. Model seçimi istemci ortam değişkenlerinden yapılır.              |
-| GET           | `/health`, `/`         | Canlılık kontrolü, `{ "status": "ok" }` döner.                                   |
-| OPTIONS       | `*`                    | CORS ön kontrolü.                                                                 |
-| GET           | `/admin`               | Yönetim paneli arayüzü (Basic Auth).                                              |
-| GET           | `/admin/api/stats`     | Toplam istatistikler JSON.                                                        |
-| GET           | `/admin/api/keys`      | API anahtarı listesi (maskelenmiş).                                               |
-| POST          | `/admin/api/keys`      | Yeni API anahtarı ekle. `{ "key": "...", "label": "..." }`                        |
-| PATCH         | `/admin/api/keys/:id`  | Anahtarı etkinleştir/devre dışı bırak. `{ "isActive": true/false }`               |
-| DELETE        | `/admin/api/keys/:id`  | Anahtarı sil.                                                                     |
-| GET           | `/admin/api/tokens`    | Erişim anahtarı listesi (maskelenmiş).                                             |
-| POST          | `/admin/api/tokens`    | Yeni erişim anahtarı ekle. `{ "token": "...", "label": "..." }`                    |
-| PATCH         | `/admin/api/tokens/:id`| Erişim anahtarını etkinleştir/devre dışı bırak. `{ "isActive": true/false }`       |
-| DELETE        | `/admin/api/tokens/:id`| Erişim anahtarını sil.                                                             |
-
-## Desteklenen Modeller
-
-Proxy, model kimliklerini NVIDIA'ya aynen iletir; aşağıdaki tablo bir başlangıç noktasıdır, izin listesi değildir.
-
-| Model kimliği                  | Notlar                                                                   |
-|--------------------------------|--------------------------------------------------------------------------|
-| `minimaxai/minimax-m2.1`       | Güçlü çok dilli kodlama modeli, satır içi `<think>` yayar.               |
-| `z-ai/glm4.7`                  | Zhipu GLM 4, düşük ilk jeton gecikmesi.                                  |
-| `deepseek-ai/deepseek-r1`      | Ayrılmış akıl yürütme modeli, yerel `reasoning_content` deltaları yayar. |
-| `meta/llama-3.3-70b-instruct`  | Genel amaçlı sohbet.                                                     |
-| `qwen/qwen2.5-72b-instruct`    | Alibaba Qwen 2.5 instruct.                                               |
-
-Tam katalog: `build.nvidia.com/models`.
+| Yöntem | Yol                     | Davranış                                                                   |
+|--------|-------------------------|----------------------------------------------------------------------------|
+| GET    | `/`                     | Public landing sayfası (model listesi, yapılandırma bilgisi)               |
+| GET    | `/health`               | Canlılık kontrolü, `{ "status": "ok" }` döner                             |
+| GET    | `/v1/models`            | NVIDIA model kataloğu, Anthropic formatında (1 saat önbellekli)            |
+| GET    | `/v1/models/:id`        | Tek model detayı                                                           |
+| POST   | `/v1/messages`          | Anthropic Messages API. `stream: true` geldiğinde SSE ile akıtılır         |
+| OPTIONS| `*`                     | CORS ön kontrolü                                                           |
+| GET    | `/admin`                | Yönetim paneli arayüzü (Basic Auth)                                        |
+| GET    | `/admin/api/stats`      | Toplam istatistikler JSON                                                  |
+| GET    | `/admin/api/keys`       | API anahtarı listesi (maskelenmiş)                                         |
+| POST   | `/admin/api/keys`       | Yeni API anahtarı ekle `{ "key": "...", "label": "..." }`                  |
+| PATCH  | `/admin/api/keys/:id`   | Anahtarı etkinleştir/devre dışı bırak `{ "isActive": true/false }`         |
+| DELETE | `/admin/api/keys/:id`   | Anahtarı sil                                                               |
+| GET    | `/admin/api/tokens`     | Erişim anahtarı listesi (maskelenmiş)                                      |
+| POST   | `/admin/api/tokens`     | Yeni erişim anahtarı ekle `{ "token": "...", "label": "..." }`             |
+| PATCH  | `/admin/api/tokens/:id` | Erişim anahtarını etkinleştir/devre dışı bırak `{ "isActive": true/false }`|
+| DELETE | `/admin/api/tokens/:id` | Erişim anahtarını sil                                                      |
+| GET    | `/admin/api/models`     | NVIDIA model kataloğu (admin cache)                                        |
 
 ## API Anahtarı Havuzu
 
@@ -154,10 +160,10 @@ Proxy birden fazla NVIDIA API anahtarını destekler. Anahtarlar SQLite veritaba
 Panel sunar:
 - İstek istatistikleri (toplam, son 24 saat, aktif anahtar/token, hata oranı)
 - API anahtarı yönetimi (ekleme, silme, etkinleştirme/devre dışı bırakma)
-- Erişim anahtarı (token) yönetimi (ekleme, silme, etkinleştirme/devre dışı bırakma)
-- Token bazlı istek istatistikleri
+- Erişim anahtarı (token) yönetimi (ekleme, silme, etkinleştirme/devre dışı bırakma, otomatik üretim)
 - Saatlik istek grafiği (son 24 saat)
 - Model bazlı kullanım dağılımı
+- NVIDIA model kataloğu (istek sayılarıyla birlikte)
 
 Erişim anahtarları DB'den yönetildiğinde `AUTH_TOKEN` ortam değişkeni yedek olarak kalır. DB'de aktif token varsa, istemciler `x-api-key` veya `Authorization: Bearer` başlığıyla eşleşen bir token göndermelidir.
 
