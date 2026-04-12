@@ -11,6 +11,8 @@ RUN npm ci --omit=dev
 # --- Runtime stage: lean image ---
 FROM node:20-alpine
 
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules
