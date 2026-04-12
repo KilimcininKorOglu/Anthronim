@@ -293,7 +293,7 @@ async function handleMessages(req, res, authTokenId) {
   }
 
   if (!upstream.ok) {
-    sendJson(res, upstream.status, { error: { type: 'api_error', message: await upstream.text() } });
+    sendJson(res, upstream.status, { error: { type: 'api_error', message: 'Upstream API hatası' } });
     return;
   }
 
