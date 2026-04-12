@@ -20,5 +20,6 @@ COPY package.json index.js db.js admin.js admin.html index.html ./
 
 ENV NODE_ENV=production
 EXPOSE 8787
+USER node
 
 CMD ["node", "index.js"]
