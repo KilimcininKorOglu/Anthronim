@@ -3,106 +3,170 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Anthronim Yonetim Paneli</title>
+<title>Anthronim // Yonetim</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
   :root {
-    --bg: #f8f9fa;
-    --surface: #fff;
-    --border: #dee2e6;
-    --text: #212529;
-    --text-secondary: #6c757d;
-    --primary: #0d6efd;
-    --danger: #dc3545;
-    --success: #198754;
-    --warning: #ffc107;
-    --radius: 8px;
-    --shadow: 0 1px 3px rgba(0,0,0,.08);
+    --bg: #000000;
+    --surface: #0a0a0a;
+    --border: #1a1a1a;
+    --green: #00ff41;
+    --green-dim: #00cc33;
+    --green-muted: #006b1d;
+    --green-faint: #002a0a;
+    --red: #ff2d2d;
+    --red-dim: #661212;
+    --text: #00ff41;
+    --text-dim: #00aa2b;
+    --text-muted: #005f17;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #1a1a2e;
-      --surface: #16213e;
-      --border: #2a2a4a;
-      --text: #e4e4e7;
-      --text-secondary: #9ca3af;
-      --primary: #3b82f6;
-      --danger: #ef4444;
-      --success: #22c55e;
-      --warning: #f59e0b;
-      --shadow: 0 1px 3px rgba(0,0,0,.3);
-    }
-  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
     background: var(--bg);
     color: var(--text);
-    line-height: 1.5;
-    padding: 20px;
-    max-width: 1200px;
+    line-height: 1.6;
+    padding: 24px;
+    max-width: 1280px;
     margin: 0 auto;
+    font-size: 13px;
   }
-  h1 { font-size: 1.5rem; margin-bottom: 24px; font-weight: 600; }
-  h2 { font-size: 1.1rem; margin-bottom: 12px; font-weight: 600; }
 
+  /* --- HEADER --- */
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .header-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .pulse {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: blink 2s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+
+  /* --- STATS --- */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
     margin-bottom: 32px;
   }
   .stat-card {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    box-shadow: var(--shadow);
+    padding: 20px 16px;
   }
-  .stat-card .label { font-size: .85rem; color: var(--text-secondary); }
-  .stat-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    box-shadow: var(--shadow);
-    margin-bottom: 24px;
+  .stat-card .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .stat-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: -1px;
   }
 
+  /* --- SECTIONS --- */
+  .section {
+    margin-bottom: 32px;
+  }
+  .section-header {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  /* --- FORM --- */
   .add-form {
     display: flex;
-    gap: 8px;
+    gap: 1px;
     margin-bottom: 16px;
-    flex-wrap: wrap;
+    background: var(--border);
+    border: 1px solid var(--border);
   }
   .add-form input {
-    padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--text);
-    font-size: .9rem;
-  }
-  .add-form input[name="key"] { flex: 1; min-width: 250px; }
-  .add-form input[name="label"] { width: 150px; }
-
-  button {
-    padding: 8px 16px;
+    padding: 10px 12px;
     border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-size: .85rem;
-    font-weight: 500;
+    background: var(--surface);
+    color: var(--green);
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
   }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-danger { background: var(--danger); color: #fff; }
-  .btn-sm { padding: 4px 10px; font-size: .8rem; }
+  .add-form input::placeholder { color: var(--text-muted); }
+  .add-form input:focus { background: #0f0f0f; }
+  .add-form input[name="key"] { flex: 1; min-width: 200px; }
+  .add-form input[name="label"] { width: 160px; }
 
+  /* --- BUTTONS --- */
+  button {
+    padding: 10px 16px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .btn-primary {
+    background: var(--green-faint);
+    color: var(--green);
+    border: 1px solid var(--green-muted);
+  }
+  .btn-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid #441010;
+  }
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  /* --- TABLE --- */
+  .table-wrap {
+    border: 1px solid var(--border);
+    overflow-x: auto;
+  }
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: .9rem;
+    font-size: 12px;
   }
   th, td {
     padding: 10px 12px;
@@ -110,30 +174,46 @@
     border-bottom: 1px solid var(--border);
   }
   th {
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-size: .8rem;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: .5px;
+    letter-spacing: 1.5px;
+    background: var(--surface);
   }
+  td { color: var(--text-dim); }
   tr:last-child td { border-bottom: none; }
 
   .badge {
     display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: .75rem;
-    font-weight: 600;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    border: 1px solid;
   }
-  .badge-active { background: var(--success); color: #fff; }
-  .badge-inactive { background: var(--text-secondary); color: #fff; }
+  .badge-active {
+    color: var(--green);
+    border-color: var(--green-muted);
+    background: var(--green-faint);
+  }
+  .badge-inactive {
+    color: var(--text-muted);
+    border-color: var(--border);
+    background: transparent;
+  }
 
+  /* --- CHART --- */
   .chart-container {
-    height: 200px;
+    height: 180px;
     display: flex;
     align-items: flex-end;
-    gap: 4px;
-    padding: 10px 0;
+    gap: 2px;
+    padding: 12px 0;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 16px 12px 8px;
   }
   .chart-bar-wrapper {
     flex: 1;
@@ -145,43 +225,54 @@
   }
   .chart-bar {
     width: 100%;
-    max-width: 30px;
-    background: var(--primary);
-    border-radius: 3px 3px 0 0;
-    min-height: 2px;
+    max-width: 24px;
+    background: var(--green-muted);
+    min-height: 1px;
   }
   .chart-label {
-    font-size: .65rem;
-    color: var(--text-secondary);
-    margin-top: 4px;
-    writing-mode: vertical-lr;
-    transform: rotate(180deg);
-    max-height: 40px;
-    overflow: hidden;
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 6px;
   }
   .chart-count {
-    font-size: .65rem;
-    color: var(--text-secondary);
-    margin-bottom: 2px;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-bottom: 3px;
   }
 
-  .empty { color: var(--text-secondary); font-style: italic; padding: 20px 0; text-align: center; }
-  .error-rate { color: var(--danger); }
+  /* --- MISC --- */
+  .empty {
+    color: var(--text-muted);
+    padding: 24px 0;
+    text-align: center;
+    font-size: 11px;
+  }
+  .error-rate { color: var(--red); }
   .actions { display: flex; gap: 4px; }
-  .mono { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; font-size: .82rem; }
-  .refresh-info { font-size: .75rem; color: var(--text-secondary); float: right; margin-top: -20px; }
+  .key-cell { color: var(--text-muted); }
 
-  @media (max-width: 600px) {
+  .footer {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: right;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .add-form { flex-wrap: wrap; }
     .add-form input[name="key"] { min-width: 100%; }
-    table { font-size: .8rem; }
     th, td { padding: 6px 8px; }
   }
 </style>
 </head>
 <body>
 
-<h1>Anthronim Yonetim Paneli</h1>
+<div class="header">
+  <h1>Anthronim // Yonetim</h1>
+  <div class="header-meta"><span class="pulse"></span>Aktif</div>
+</div>
 
 <div class="stats-grid">
   <div class="stat-card">
@@ -202,11 +293,11 @@
   </div>
 </div>
 
-<div class="card">
-  <h2>API Anahtarlari</h2>
+<div class="section">
+  <div class="section-header">API Anahtarlari</div>
   <form class="add-form" id="addKeyForm">
     <input type="text" name="key" placeholder="nvapi-..." required>
-    <input type="text" name="label" placeholder="Etiket (opsiyonel)">
+    <input type="text" name="label" placeholder="etiket">
     <button type="submit" class="btn-primary">Ekle</button>
   </form>
   <div id="keysContainer">
@@ -214,28 +305,24 @@
   </div>
 </div>
 
-<div class="card">
-  <h2>Saatlik Istek Grafigi (Son 24 Saat)</h2>
+<div class="section">
+  <div class="section-header">Saatlik Istek Grafigi / Son 24 Saat</div>
   <div class="chart-container" id="hourlyChart">
     <div class="empty">Yukleniyor...</div>
   </div>
 </div>
 
-<div class="card">
-  <h2>Model Kullanimi</h2>
+<div class="section">
+  <div class="section-header">Model Kullanimi</div>
   <div id="modelStats">
     <div class="empty">Yukleniyor...</div>
   </div>
 </div>
 
-<p class="refresh-info">Otomatik yenileme: 30 saniye</p>
+<div class="footer">Otomatik yenileme: 30s</div>
 
 <script>
 const API_BASE = '/admin/api';
-
-function getAuthHeaders() {
-  return {};
-}
 
 async function apiFetch(path, opts = {}) {
   const res = await fetch(API_BASE + path, {
@@ -272,7 +359,6 @@ async function loadStats() {
     errorEl.textContent = errorRate;
     if (stats.error_requests > 0) errorEl.classList.add('error-rate');
     else errorEl.classList.remove('error-rate');
-
     renderHourlyChart(stats.hourly);
     renderModelStats(stats.modelStats);
   } catch (err) {
@@ -304,9 +390,9 @@ function renderModelStats(models) {
     container.innerHTML = '<div class="empty">Henuz veri yok</div>';
     return;
   }
-  container.innerHTML = '<table><thead><tr><th>Model</th><th>Istek</th></tr></thead><tbody>' +
-    models.map(m => `<tr><td class="mono">${escHtml(m.model || 'bilinmeyen')}</td><td>${formatNumber(m.count)}</td></tr>`).join('') +
-    '</tbody></table>';
+  container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Model</th><th>Istek</th></tr></thead><tbody>' +
+    models.map(m => `<tr><td>${escHtml(m.model || 'bilinmeyen')}</td><td>${formatNumber(m.count)}</td></tr>`).join('') +
+    '</tbody></table></div>';
 }
 
 async function loadKeys() {
@@ -317,7 +403,7 @@ async function loadKeys() {
       container.innerHTML = '<div class="empty">Henuz API anahtari eklenmedi</div>';
       return;
     }
-    container.innerHTML = `<table>
+    container.innerHTML = `<div class="table-wrap"><table>
       <thead><tr>
         <th>Etiket</th>
         <th>Anahtar</th>
@@ -329,7 +415,7 @@ async function loadKeys() {
       </tr></thead>
       <tbody>${keys.map(k => `<tr>
         <td>${escHtml(k.label || '-')}</td>
-        <td class="mono">${escHtml(k.key)}</td>
+        <td class="key-cell">${escHtml(k.key)}</td>
         <td><span class="badge ${k.is_active ? 'badge-active' : 'badge-inactive'}">${k.is_active ? 'Aktif' : 'Pasif'}</span></td>
         <td>${formatNumber(k.request_count)}</td>
         <td>${k.error_count > 0 ? '<span class="error-rate">' + formatNumber(k.error_count) + '</span>' : '0'}</td>
@@ -339,7 +425,7 @@ async function loadKeys() {
           <button class="btn-sm btn-danger" onclick="deleteKey(${k.id})">Sil</button>
         </td>
       </tr>`).join('')}</tbody>
-    </table>`;
+    </table></div>`;
   } catch (err) {
     console.error('Key listesi yuklenemedi:', err);
   }
