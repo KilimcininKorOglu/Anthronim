@@ -12,6 +12,10 @@ const HOST = process.env.HOST || '0.0.0.0';
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const AUTH_TOKEN_ENV = process.env.AUTH_TOKEN;
 
+const MODEL_CACHE_TTL = 3600000;
+let modelCache = null;
+let modelCacheTime = 0;
+
 if (!NVIDIA_API_KEY && !hasKeys()) {
   console.error('Hata: NVIDIA_API_KEY ortam değişkeni ayarlanmamış ve veritabanında API anahtarı yok.');
   process.exit(1);
@@ -71,7 +75,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       return;
     }
     if (pathname === '/v1/models' && req.method === 'GET') {
-      sendJson(res, 200, { data: [], has_more: false, first_id: null, last_id: null });
+      sendJson(res, 200, await getModels());
       return;
     }
     if (pathname === '/health' || pathname === '/') {
@@ -93,6 +97,23 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
 server.listen(PORT, HOST, () => {
   console.log(`Anthronim http://${HOST}:${PORT} adresinde dinliyor.`);
 });
+
+async function getModels() {
+  const now = Date.now();
+  if (modelCache && (now - modelCacheTime) < MODEL_CACHE_TTL) {
+    return modelCache;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/models`);
+    if (res.ok) {
+      modelCache = await res.json();
+      modelCacheTime = now;
+    }
+  } catch (e) {
+    // Fetch failed; return stale cache or empty
+  }
+  return modelCache || { object: 'list', data: [] };
+}
 
 function sendJson(res, status, data) {
   res.writeHead(status, JSON_HEADERS);
