@@ -662,7 +662,7 @@
         }
         const grouped = {};
         for (const m of cachedModelList) {
-          const owner = m.owned_by || 'bilinmeyen';
+          const owner = m.id.includes('/') ? m.id.split('/')[0] : 'bilinmeyen';
           if (!grouped[owner]) grouped[owner] = [];
           grouped[owner].push({ id: m.id, count: usageMap[m.id] || 0 });
         }

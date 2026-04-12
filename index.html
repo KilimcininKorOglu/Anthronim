@@ -236,7 +236,7 @@
 
         const grouped = {};
         for (const m of models) {
-          const owner = m.owned_by || 'bilinmeyen';
+          const owner = m.id.includes('/') ? m.id.split('/')[0] : 'bilinmeyen';
           if (!grouped[owner]) grouped[owner] = [];
           grouped[owner].push(m.id);
         }
