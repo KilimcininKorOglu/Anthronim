@@ -144,6 +144,25 @@
       text-decoration: none;
     }
 
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    code {
+      color: var(--green-dim);
+    }
+
+    .config-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 12px;
+    }
+
     .model-count {
       font-size: 11px;
       color: var(--text-muted);
@@ -171,6 +190,21 @@
     <p>Bu proxy'ye erişim anahtarı gereklidir.</p>
     <p>Erişim anahtarı almak için <a href="https://x.com/koroglan" target="_blank" rel="noopener">x.com/koroglan</a>
       adresinden mesaj gönderin.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-header">Claude Code Yapılandırması</div>
+    <p class="config-note"><code>~/.claude/settings.json</code> dosyasına ekleyin:</p>
+    <pre><code>{
+  "env": {
+    "ANTHROPIC_BASE_URL": "<span id="baseUrl"></span>",
+    "ANTHROPIC_API_KEY": "&lt;erişim anahtarınız&gt;",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "minimaxai/minimax-m2.5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimaxai/minimax-m2.5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "z-ai/glm5"
+  }
+}</code></pre>
+    <p class="config-note">Oturum içinde model değiştirmek için: <code>/model opus</code>, <code>/model sonnet</code>, <code>/model haiku</code></p>
   </div>
 
   <div class="section">
@@ -223,6 +257,7 @@
       return d.innerHTML;
     }
 
+    document.getElementById('baseUrl').textContent = location.origin;
     loadModels();
   </script>
 </body>
