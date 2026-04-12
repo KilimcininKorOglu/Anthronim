@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anthronim Yonetim Paneli</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #fff;
+    --border: #dee2e6;
+    --text: #212529;
+    --text-secondary: #6c757d;
+    --primary: #0d6efd;
+    --primary-hover: #0b5ed7;
+    --danger: #dc3545;
+    --danger-hover: #bb2d3b;
+    --success: #198754;
+    --warning: #ffc107;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --border: #2a2a4a;
+      --text: #e4e4e7;
+      --text-secondary: #9ca3af;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --shadow: 0 1px 3px rgba(0,0,0,.3);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.5rem; margin-bottom: 24px; font-weight: 600; }
+  h2 { font-size: 1.1rem; margin-bottom: 12px; font-weight: 600; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .label { font-size: .85rem; color: var(--text-secondary); }
+  .stat-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+
+  .add-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .add-form input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font-size: .9rem;
+  }
+  .add-form input[name="key"] { flex: 1; min-width: 250px; }
+  .add-form input[name="label"] { width: 150px; }
+
+  button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: .85rem;
+    font-weight: 500;
+    transition: background .15s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: var(--danger-hover); }
+  .btn-sm { padding: 4px 10px; font-size: .8rem; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+  }
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: .75rem;
+    font-weight: 600;
+  }
+  .badge-active { background: var(--success); color: #fff; }
+  .badge-inactive { background: var(--text-secondary); color: #fff; }
+
+  .chart-container {
+    height: 200px;
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 10px 0;
+  }
+  .chart-bar-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .chart-bar {
+    width: 100%;
+    max-width: 30px;
+    background: var(--primary);
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height .3s;
+  }
+  .chart-label {
+    font-size: .65rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    max-height: 40px;
+    overflow: hidden;
+  }
+  .chart-count {
+    font-size: .65rem;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+  }
+
+  .empty { color: var(--text-secondary); font-style: italic; padding: 20px 0; text-align: center; }
+  .error-rate { color: var(--danger); }
+  .actions { display: flex; gap: 4px; }
+  .mono { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; font-size: .82rem; }
+  .refresh-info { font-size: .75rem; color: var(--text-secondary); float: right; margin-top: -20px; }
+
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .add-form input[name="key"] { min-width: 100%; }
+    table { font-size: .8rem; }
+    th, td { padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Anthronim Yonetim Paneli</h1>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="label">Toplam Istek</div>
+    <div class="value" id="totalRequests">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Son 24 Saat</div>
+    <div class="value" id="todayRequests">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Aktif Anahtar</div>
+    <div class="value" id="activeKeys">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Hata Orani</div>
+    <div class="value" id="errorRate">-</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>API Anahtarlari</h2>
+  <form class="add-form" id="addKeyForm">
+    <input type="text" name="key" placeholder="nvapi-..." required>
+    <input type="text" name="label" placeholder="Etiket (opsiyonel)">
+    <button type="submit" class="btn-primary">Ekle</button>
+  </form>
+  <div id="keysContainer">
+    <div class="empty">Yukleniyor...</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Saatlik Istek Grafigi (Son 24 Saat)</h2>
+  <div class="chart-container" id="hourlyChart">
+    <div class="empty">Yukleniyor...</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Model Kullanimi</h2>
+  <div id="modelStats">
+    <div class="empty">Yukleniyor...</div>
+  </div>
+</div>
+
+<p class="refresh-info">Otomatik yenileme: 30 saniye</p>
+
+<script>
+const API_BASE = '/admin/api';
+
+function getAuthHeaders() {
+  return {};
+}
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API_BASE + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'API hatasi');
+  return data;
+}
+
+function formatNumber(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr + 'Z');
+  return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadStats() {
+  try {
+    const stats = await apiFetch('/stats');
+    document.getElementById('totalRequests').textContent = formatNumber(stats.total_requests);
+    document.getElementById('todayRequests').textContent = formatNumber(stats.today_requests);
+    document.getElementById('activeKeys').textContent = stats.active_keys;
+    const errorRate = stats.total_requests > 0
+      ? ((stats.error_requests / stats.total_requests) * 100).toFixed(1) + '%'
+      : '0%';
+    const errorEl = document.getElementById('errorRate');
+    errorEl.textContent = errorRate;
+    if (stats.error_requests > 0) errorEl.classList.add('error-rate');
+    else errorEl.classList.remove('error-rate');
+
+    renderHourlyChart(stats.hourly);
+    renderModelStats(stats.modelStats);
+  } catch (err) {
+    console.error('Stats yuklenemedi:', err);
+  }
+}
+
+function renderHourlyChart(hourly) {
+  const container = document.getElementById('hourlyChart');
+  if (!hourly || hourly.length === 0) {
+    container.innerHTML = '<div class="empty">Henuz veri yok</div>';
+    return;
+  }
+  const max = Math.max(...hourly.map(h => h.count), 1);
+  container.innerHTML = hourly.map(h => {
+    const pct = (h.count / max) * 100;
+    const hour = h.hour.slice(11, 16);
+    return `<div class="chart-bar-wrapper">
+      <div class="chart-count">${h.count}</div>
+      <div class="chart-bar" style="height:${Math.max(pct, 2)}%"></div>
+      <div class="chart-label">${hour}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderModelStats(models) {
+  const container = document.getElementById('modelStats');
+  if (!models || models.length === 0) {
+    container.innerHTML = '<div class="empty">Henuz veri yok</div>';
+    return;
+  }
+  container.innerHTML = '<table><thead><tr><th>Model</th><th>Istek</th></tr></thead><tbody>' +
+    models.map(m => `<tr><td class="mono">${escHtml(m.model || 'bilinmeyen')}</td><td>${formatNumber(m.count)}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+async function loadKeys() {
+  try {
+    const keys = await apiFetch('/keys');
+    const container = document.getElementById('keysContainer');
+    if (keys.length === 0) {
+      container.innerHTML = '<div class="empty">Henuz API anahtari eklenmedi</div>';
+      return;
+    }
+    container.innerHTML = `<table>
+      <thead><tr>
+        <th>Etiket</th>
+        <th>Anahtar</th>
+        <th>Durum</th>
+        <th>Istek</th>
+        <th>Hata</th>
+        <th>Son Kullanim</th>
+        <th>Islem</th>
+      </tr></thead>
+      <tbody>${keys.map(k => `<tr>
+        <td>${escHtml(k.label || '-')}</td>
+        <td class="mono">${escHtml(k.key)}</td>
+        <td><span class="badge ${k.is_active ? 'badge-active' : 'badge-inactive'}">${k.is_active ? 'Aktif' : 'Pasif'}</span></td>
+        <td>${formatNumber(k.request_count)}</td>
+        <td>${k.error_count > 0 ? '<span class="error-rate">' + formatNumber(k.error_count) + '</span>' : '0'}</td>
+        <td>${formatDate(k.last_used_at)}</td>
+        <td class="actions">
+          <button class="btn-sm ${k.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleKey(${k.id}, ${!k.is_active})">${k.is_active ? 'Devre Disi' : 'Etkinlestir'}</button>
+          <button class="btn-sm btn-danger" onclick="deleteKey(${k.id})">Sil</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  } catch (err) {
+    console.error('Key listesi yuklenemedi:', err);
+  }
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function toggleKey(id, isActive) {
+  try {
+    await apiFetch('/keys/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+    await refresh();
+  } catch (err) {
+    alert('Hata: ' + err.message);
+  }
+}
+
+async function deleteKey(id) {
+  if (!confirm('Bu API anahtarini silmek istediginizden emin misiniz?')) return;
+  try {
+    await apiFetch('/keys/' + id, { method: 'DELETE' });
+    await refresh();
+  } catch (err) {
+    alert('Hata: ' + err.message);
+  }
+}
+
+document.getElementById('addKeyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const key = form.key.value.trim();
+  const label = form.label.value.trim();
+  if (!key) return;
+  try {
+    await apiFetch('/keys', { method: 'POST', body: JSON.stringify({ key, label }) });
+    form.reset();
+    await refresh();
+  } catch (err) {
+    alert('Hata: ' + err.message);
+  }
+});
+
+async function refresh() {
+  await Promise.all([loadStats(), loadKeys()]);
+}
+
+refresh();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>
