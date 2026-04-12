@@ -9,7 +9,11 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch index.js"
+    "dev": "node --watch index.js",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:dev": "docker compose --profile dev up dev",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "better-sqlite3": "^12.9.0"

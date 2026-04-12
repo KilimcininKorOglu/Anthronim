@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = join(__dirname, 'anthronim.db');
+const DB_PATH = process.env.DB_PATH || join(__dirname, 'anthronim.db');
 
 let db;
 let cachedKeys = null;

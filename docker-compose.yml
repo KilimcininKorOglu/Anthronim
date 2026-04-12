@@ -1,0 +1,32 @@
+services:
+  anthronim:
+    build: .
+    ports:
+      - "${PORT:-8787}:8787"
+    env_file:
+      - .env
+    volumes:
+      - ./docker-data:/app/data
+    environment:
+      - DB_PATH=/app/data/anthronim.db
+    restart: unless-stopped
+
+  dev:
+    build:
+      context: .
+      target: builder
+    ports:
+      - "${PORT:-8787}:8787"
+    env_file:
+      - .env
+    volumes:
+      - ./index.js:/app/index.js
+      - ./db.js:/app/db.js
+      - ./admin.js:/app/admin.js
+      - ./admin.html:/app/admin.html
+      - ./docker-data:/app/data
+    environment:
+      - DB_PATH=/app/data/anthronim.db
+    command: node --watch index.js
+    profiles:
+      - dev

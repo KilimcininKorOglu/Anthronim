@@ -1,0 +1,14 @@
+node_modules
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+anthronim.db
+anthronim.db-wal
+anthronim.db-shm
+docker-data
+.claude
+.playwright-mcp
+*.md
+LICENSE
