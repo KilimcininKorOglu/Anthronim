@@ -109,40 +109,40 @@ Oturum içinde model geçişi `/model opus`, `/model sonnet` veya `/model haiku`
 
 ## Yapılandırma Referansı
 
-| Ortam değişkeni   | Zorunlu | Varsayılan       | Amaç                                                           |
-|--------------------|---------|------------------|----------------------------------------------------------------|
-| `NVIDIA_API_KEY`   | Koşullu | —                | NVIDIA NIM uç noktasına iletilir. DB'de anahtar varsa opsiyonel |
-| `AUTH_TOKEN`       | Hayır   | —                | Erişim anahtarı (yedek). DB'de token varsa opsiyonel            |
-| `PORT`             | Hayır   | `8787`           | HTTP sunucusunun dinleyeceği port                               |
-| `HOST`             | Hayır   | `0.0.0.0`        | HTTP sunucusunun bağlanacağı arayüz                             |
-| `ADMIN_USER`       | Hayır   | —                | Yönetim paneli kullanıcı adı (`ADMIN_PASS` ile birlikte)        |
-| `ADMIN_PASS`       | Hayır   | —                | Yönetim paneli şifresi (`ADMIN_USER` ile birlikte)              |
-| `MODEL_CACHE_TTL`  | Hayır   | `3600000` (1 sa) | NVIDIA model listesi önbellek süresi (ms)                       |
-| `DB_PATH`          | Hayır   | `./anthronim.db` | SQLite dosya yolu (Docker'da `/app/data/anthronim.db`)          |
+| Ortam değişkeni   | Zorunlu | Varsayılan       | Amaç                                                            |
+|-------------------|---------|------------------|-----------------------------------------------------------------|
+| `NVIDIA_API_KEY`  | Koşullu | —                | NVIDIA NIM uç noktasına iletilir. DB'de anahtar varsa opsiyonel |
+| `AUTH_TOKEN`      | Hayır   | —                | Erişim anahtarı (yedek). DB'de token varsa opsiyonel            |
+| `PORT`            | Hayır   | `8787`           | HTTP sunucusunun dinleyeceği port                               |
+| `HOST`            | Hayır   | `0.0.0.0`        | HTTP sunucusunun bağlanacağı arayüz                             |
+| `ADMIN_USER`      | Hayır   | —                | Yönetim paneli kullanıcı adı (`ADMIN_PASS` ile birlikte)        |
+| `ADMIN_PASS`      | Hayır   | —                | Yönetim paneli şifresi (`ADMIN_USER` ile birlikte)              |
+| `MODEL_CACHE_TTL` | Hayır   | `3600000` (1 sa) | NVIDIA model listesi önbellek süresi (ms)                       |
+| `DB_PATH`         | Hayır   | `./anthronim.db` | SQLite dosya yolu (Docker'da `/app/data/anthronim.db`)          |
 
 Shell ortamında tanımlı bir değişken, aynı adı taşıyan `.env` girdisinin önüne geçer.
 
 ## Uç Noktalar
 
-| Yöntem | Yol                     | Davranış                                                                   |
-|--------|-------------------------|----------------------------------------------------------------------------|
-| GET    | `/`                     | Public landing sayfası (model listesi, yapılandırma bilgisi)               |
-| GET    | `/health`               | Canlılık kontrolü, `{ "status": "ok" }` döner                             |
-| GET    | `/v1/models`            | NVIDIA model kataloğu, Anthropic formatında (1 saat önbellekli)            |
-| GET    | `/v1/models/:id`        | Tek model detayı                                                           |
-| POST   | `/v1/messages`          | Anthropic Messages API. `stream: true` geldiğinde SSE ile akıtılır         |
-| OPTIONS| `*`                     | CORS ön kontrolü                                                           |
-| GET    | `/admin`                | Yönetim paneli arayüzü (Basic Auth)                                        |
-| GET    | `/admin/api/stats`      | Toplam istatistikler JSON                                                  |
-| GET    | `/admin/api/keys`       | API anahtarı listesi (maskelenmiş)                                         |
-| POST   | `/admin/api/keys`       | Yeni API anahtarı ekle `{ "key": "...", "label": "..." }`                  |
-| PATCH  | `/admin/api/keys/:id`   | Anahtarı etkinleştir/devre dışı bırak `{ "isActive": true/false }`         |
-| DELETE | `/admin/api/keys/:id`   | Anahtarı sil                                                               |
-| GET    | `/admin/api/tokens`     | Erişim anahtarı listesi (maskelenmiş)                                      |
-| POST   | `/admin/api/tokens`     | Yeni erişim anahtarı ekle `{ "token": "...", "label": "..." }`             |
-| PATCH  | `/admin/api/tokens/:id` | Erişim anahtarını etkinleştir/devre dışı bırak `{ "isActive": true/false }`|
-| DELETE | `/admin/api/tokens/:id` | Erişim anahtarını sil                                                      |
-| GET    | `/admin/api/models`     | NVIDIA model kataloğu (admin cache)                                        |
+| Yöntem  | Yol                     | Davranış                                                                    |
+|---------|-------------------------|-----------------------------------------------------------------------------|
+| GET     | `/`                     | Public landing sayfası (model listesi, yapılandırma bilgisi)                |
+| GET     | `/health`               | Canlılık kontrolü, `{ "status": "ok" }` döner                               |
+| GET     | `/v1/models`            | NVIDIA model kataloğu, Anthropic formatında (1 saat önbellekli)             |
+| GET     | `/v1/models/:id`        | Tek model detayı                                                            |
+| POST    | `/v1/messages`          | Anthropic Messages API. `stream: true` geldiğinde SSE ile akıtılır          |
+| OPTIONS | `*`                     | CORS ön kontrolü                                                            |
+| GET     | `/admin`                | Yönetim paneli arayüzü (Basic Auth)                                         |
+| GET     | `/admin/api/stats`      | Toplam istatistikler JSON                                                   |
+| GET     | `/admin/api/keys`       | API anahtarı listesi (maskelenmiş)                                          |
+| POST    | `/admin/api/keys`       | Yeni API anahtarı ekle `{ "key": "...", "label": "..." }`                   |
+| PATCH   | `/admin/api/keys/:id`   | Anahtarı etkinleştir/devre dışı bırak `{ "isActive": true/false }`          |
+| DELETE  | `/admin/api/keys/:id`   | Anahtarı sil                                                                |
+| GET     | `/admin/api/tokens`     | Erişim anahtarı listesi (maskelenmiş)                                       |
+| POST    | `/admin/api/tokens`     | Yeni erişim anahtarı ekle `{ "token": "...", "label": "..." }`              |
+| PATCH   | `/admin/api/tokens/:id` | Erişim anahtarını etkinleştir/devre dışı bırak `{ "isActive": true/false }` |
+| DELETE  | `/admin/api/tokens/:id` | Erişim anahtarını sil                                                       |
+| GET     | `/admin/api/models`     | NVIDIA model kataloğu (admin cache)                                         |
 
 ## API Anahtarı Havuzu
 
