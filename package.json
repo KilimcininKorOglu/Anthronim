@@ -1,0 +1,14 @@
+{
+  "name": "anthronim",
+  "version": "1.0.0",
+  "description": "Anthronim — Anthropic Messages API formatını NVIDIA NIM'e çeviren Node.js proxy",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  }
+}
