@@ -45,7 +45,11 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     const pathname = q === -1 ? rawUrl : rawUrl.slice(0, q);
 
     if (req.method === 'OPTIONS') {
-      res.writeHead(204, PREFLIGHT_HEADERS);
+      if (rawUrl.startsWith('/admin')) {
+        res.writeHead(204);
+      } else {
+        res.writeHead(204, PREFLIGHT_HEADERS);
+      }
       res.end();
       return;
     }
