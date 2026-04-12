@@ -267,6 +267,13 @@ export async function handleAdmin(req, res, pathname) {
       sendJson(res, 400, { error: 'isActive (boolean) alanı zorunlu' });
       return;
     }
+    if (!body.isActive) {
+      const activeCount = listTokens().filter(t => t.is_active && t.id !== id).length;
+      if (activeCount === 0 && !AUTH_TOKEN_ENV) {
+        sendJson(res, 400, { error: 'Son aktif erişim anahtarı devre dışı bırakılamaz' });
+        return;
+      }
+    }
     const toggled = toggleToken(id, body.isActive);
     sendJson(res, toggled ? 200 : 404, toggled ? { ok: true } : { error: 'Erişim anahtarı bulunamadı' });
     return;
