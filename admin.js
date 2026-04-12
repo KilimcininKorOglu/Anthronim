@@ -58,7 +58,8 @@ function safeEqual(a, b) {
 }
 
 function getClientIp(req) {
-  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+  const xff = req.headers['x-forwarded-for'];
+  return xff ? xff.split(',').pop().trim() : req.socket.remoteAddress;
 }
 
 function requireAuth(req, res) {
