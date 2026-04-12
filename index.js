@@ -7,6 +7,7 @@ loadDotEnv();
 initDb();
 
 const API_BASE = 'https://integrate.api.nvidia.com/v1';
+const indexHtml = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
@@ -49,6 +50,20 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       return;
     }
 
+    if (pathname === '/') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(indexHtml);
+      return;
+    }
+    if (pathname === '/health') {
+      sendJson(res, 200, { status: 'ok' });
+      return;
+    }
+    if (pathname === '/v1/models' && req.method === 'GET') {
+      sendJson(res, 200, await getModels());
+      return;
+    }
+
     if (pathname.startsWith('/admin')) {
       await handleAdmin(req, res, pathname);
       return;
@@ -72,14 +87,6 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
 
     if (pathname === '/v1/messages' && req.method === 'POST') {
       await handleMessages(req, res, authTokenId);
-      return;
-    }
-    if (pathname === '/v1/models' && req.method === 'GET') {
-      sendJson(res, 200, await getModels());
-      return;
-    }
-    if (pathname === '/health' || pathname === '/') {
-      sendJson(res, 200, { status: 'ok' });
       return;
     }
 

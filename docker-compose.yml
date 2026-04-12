@@ -24,6 +24,7 @@ services:
       - ./db.js:/app/db.js
       - ./admin.js:/app/admin.js
       - ./admin.html:/app/admin.html
+      - ./index.html:/app/index.html
       - ./docker-data:/app/data
     environment:
       - DB_PATH=/app/data/anthronim.db

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anthronim</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+    :root {
+      --bg: #000000;
+      --surface: #0a0a0a;
+      --border: #1a1a1a;
+      --green: #00ff41;
+      --green-dim: #00cc33;
+      --green-muted: #006b1d;
+      --green-faint: #002a0a;
+      --text: #00ff41;
+      --text-dim: #00aa2b;
+      --text-muted: #005f17;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px;
+      max-width: 960px;
+      margin: 0 auto;
+      font-size: 13px;
+    }
+
+    .header {
+      margin-bottom: 48px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section-header {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .access-box {
+      border: 1px solid var(--green-muted);
+      background: var(--green-faint);
+      padding: 24px;
+      margin-bottom: 40px;
+    }
+
+    .access-box p {
+      margin-bottom: 12px;
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    .access-box a {
+      color: var(--green);
+      text-decoration: none;
+      border-bottom: 1px solid var(--green-muted);
+      font-weight: 700;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      background: var(--surface);
+    }
+
+    td {
+      color: var(--text-dim);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .empty {
+      color: var(--text-muted);
+      padding: 24px 0;
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .footer {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    .model-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 600px) {
+      th,
+      td {
+        padding: 6px 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>Anthronim</h1>
+    <p>NVIDIA NIM uç noktasını Anthropic Messages API olarak sunan proxy</p>
+  </div>
+
+  <div class="access-box">
+    <p>Bu proxy'ye erişim anahtarı gereklidir.</p>
+    <p>Erişim anahtarı almak için <a href="https://x.com/koroglan" target="_blank" rel="noopener">x.com/koroglan</a> adresinden mesaj gönderin.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-header">Kullanılabilir Modeller</div>
+    <div class="model-count" id="modelCount"></div>
+    <div id="modelList">
+      <div class="empty">Yükleniyor...</div>
+    </div>
+  </div>
+
+  <div class="footer">Anthronim &mdash; <a href="https://github.com/kilimcininkoroglu/anthronim">GitHub</a></div>
+
+  <script>
+    async function loadModels() {
+      try {
+        const res = await fetch('/v1/models');
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        const models = data.data || [];
+        const container = document.getElementById('modelList');
+        const countEl = document.getElementById('modelCount');
+
+        if (models.length === 0) {
+          container.innerHTML = '<div class="empty">Model bulunamadı</div>';
+          return;
+        }
+
+        countEl.textContent = models.length + ' model';
+
+        const grouped = {};
+        for (const m of models) {
+          const owner = m.owned_by || 'bilinmeyen';
+          if (!grouped[owner]) grouped[owner] = [];
+          grouped[owner].push(m.id);
+        }
+        const owners = Object.keys(grouped).sort();
+        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Sağlayıcı</th><th>Model</th></tr></thead><tbody>' +
+          owners.flatMap(owner => grouped[owner].map((id, i) =>
+            `<tr><td>${i === 0 ? escHtml(owner) + ' (' + grouped[owner].length + ')' : ''}</td><td>${escHtml(id)}</td></tr>`
+          )).join('') +
+          '</tbody></table></div>';
+      } catch (err) {
+        document.getElementById('modelList').innerHTML = '<div class="empty">Model listesi yüklenemedi</div>';
+      }
+    }
+
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    loadModels();
+  </script>
+</body>
+
+</html>
