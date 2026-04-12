@@ -97,7 +97,7 @@ Oturum içinde model geçişi `/model opus`, `/model sonnet` veya `/model haiku`
 | Ortam değişkeni  | Zorunlu | Varsayılan | Amaç                                                                          |
 |------------------|---------|------------|-------------------------------------------------------------------------------|
 | `NVIDIA_API_KEY` | Koşullu | —          | NVIDIA NIM uç noktasına iletilir. DB'de anahtar varsa opsiyonel.              |
-| `AUTH_TOKEN`     | Hayır   | —          | Ayarlandığında istemcilerden `x-api-key` veya `Authorization: Bearer` bekler. |
+| `AUTH_TOKEN`     | Hayır   | —          | Erişim anahtarı (yedek). DB'de token varsa opsiyonel.                         |
 | `PORT`           | Hayır   | `8787`     | HTTP sunucusunun dinleyeceği port.                                            |
 | `HOST`           | Hayır   | `0.0.0.0`  | HTTP sunucusunun bağlanacağı arayüz.                                          |
 | `ADMIN_USER`     | Hayır   | —          | Yonetim paneli kullanıcı adı. `ADMIN_PASS` ile birlikte ayarlanmalı.          |
@@ -119,6 +119,10 @@ Shell ortamında tanımlı bir değişken, aynı adı taşıyan `.env` girdisini
 | POST          | `/admin/api/keys`      | Yeni API anahtarı ekle. `{ "key": "...", "label": "..." }`                        |
 | PATCH         | `/admin/api/keys/:id`  | Anahtarı etkinleştir/devre dışı bırak. `{ "isActive": true/false }`               |
 | DELETE        | `/admin/api/keys/:id`  | Anahtarı sil.                                                                     |
+| GET           | `/admin/api/tokens`    | Erişim anahtarı listesi (maskelenmiş).                                             |
+| POST          | `/admin/api/tokens`    | Yeni erişim anahtarı ekle. `{ "token": "...", "label": "..." }`                    |
+| PATCH         | `/admin/api/tokens/:id`| Erişim anahtarını etkinleştir/devre dışı bırak. `{ "isActive": true/false }`       |
+| DELETE        | `/admin/api/tokens/:id`| Erişim anahtarını sil.                                                             |
 
 ## Desteklenen Modeller
 
@@ -148,12 +152,16 @@ Proxy birden fazla NVIDIA API anahtarını destekler. Anahtarlar SQLite veritaba
 `ADMIN_USER` ve `ADMIN_PASS` ortam degiskenleri ayarlandıgında `/admin` yolu aktif olur. Tarayıcı HTTP Basic Auth penceresi gösterir.
 
 Panel sunar:
-- Istek istatistikleri (toplam, son 24 saat, hata oranı)
+- Istek istatistikleri (toplam, son 24 saat, aktif anahtar/token, hata oranı)
 - API anahtarı yonetimi (ekleme, silme, etkinlestirme/devre dısı bırakma)
+- Erisim anahtarı (token) yonetimi (ekleme, silme, etkinlestirme/devre dısı bırakma)
+- Token bazlı istek istatistikleri
 - Saatlik istek grafigi (son 24 saat)
 - Model bazlı kullanım dagılımı
 
-Admin kimlik dogrulaması, proxy erişim anahtarından (`AUTH_TOKEN`) bagımsızdır. Her ikisi de aynı anda kullanılabilir.
+Erisim anahtarları DB'den yonetildiginde `AUTH_TOKEN` ortam degiskeni yedek olarak kalır. DB'de aktif token varsa, istemciler `x-api-key` veya `Authorization: Bearer` baslıgıyla eslesen bir token gondermelidir.
+
+Admin kimlik dogrulaması (Basic Auth), proxy erisim anahtarından bagımsızdır.
 
 HTTP Basic Auth base64 kodlaması kullanır; üretim ortamında TLS (reverse proxy) ardında çalıştırılması onerilir.
 

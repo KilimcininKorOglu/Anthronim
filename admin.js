@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { addKey, removeKey, toggleKey, listKeys, getStats } from './db.js';
+import { addKey, removeKey, toggleKey, listKeys, getStats, addToken, removeToken, toggleToken, listTokens } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -142,6 +142,65 @@ export async function handleAdmin(req, res, pathname) {
     }
     const toggled = toggleKey(id, body.isActive);
     sendJson(res, toggled ? 200 : 404, toggled ? { ok: true } : { error: 'Anahtar bulunamadı' });
+    return;
+  }
+
+  // GET /admin/api/tokens
+  if (pathname === '/admin/api/tokens' && req.method === 'GET') {
+    const tokens = listTokens().map(t => ({
+      ...t,
+      token: maskKey(t.token),
+    }));
+    sendJson(res, 200, tokens);
+    return;
+  }
+
+  // POST /admin/api/tokens
+  if (pathname === '/admin/api/tokens' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      if (!body.token || typeof body.token !== 'string') {
+        sendJson(res, 400, { error: 'token alanı zorunlu' });
+        return;
+      }
+      const id = addToken(body.token.trim(), (body.label || '').trim());
+      sendJson(res, 201, { id });
+    } catch (err) {
+      if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        sendJson(res, 409, { error: 'Bu erişim anahtarı zaten mevcut' });
+        return;
+      }
+      throw err;
+    }
+    return;
+  }
+
+  // DELETE /admin/api/tokens/:id
+  if (pathname.startsWith('/admin/api/tokens/') && req.method === 'DELETE') {
+    const id = extractIdFromPath(pathname);
+    if (isNaN(id)) {
+      sendJson(res, 400, { error: 'Geçersiz ID' });
+      return;
+    }
+    const removed = removeToken(id);
+    sendJson(res, removed ? 200 : 404, removed ? { ok: true } : { error: 'Erişim anahtarı bulunamadı' });
+    return;
+  }
+
+  // PATCH /admin/api/tokens/:id
+  if (pathname.startsWith('/admin/api/tokens/') && req.method === 'PATCH') {
+    const id = extractIdFromPath(pathname);
+    if (isNaN(id)) {
+      sendJson(res, 400, { error: 'Geçersiz ID' });
+      return;
+    }
+    const body = await readJsonBody(req);
+    if (typeof body.isActive !== 'boolean') {
+      sendJson(res, 400, { error: 'isActive (boolean) alanı zorunlu' });
+      return;
+    }
+    const toggled = toggleToken(id, body.isActive);
+    sendJson(res, toggled ? 200 : 404, toggled ? { ok: true } : { error: 'Erişim anahtarı bulunamadı' });
     return;
   }
 

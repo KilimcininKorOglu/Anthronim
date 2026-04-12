@@ -1,6 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import { initDb, getNextKey, logRequest, hasKeys } from './db.js';
+import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens } from './db.js';
 import { handleAdmin } from './admin.js';
 
 loadDotEnv();
@@ -10,7 +10,7 @@ const API_BASE = 'https://integrate.api.nvidia.com/v1';
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
-const AUTH_TOKEN = process.env.AUTH_TOKEN;
+const AUTH_TOKEN_ENV = process.env.AUTH_TOKEN;
 
 if (!NVIDIA_API_KEY && !hasKeys()) {
   console.error('Hata: NVIDIA_API_KEY ortam değişkeni ayarlanmamış ve veritabanında API anahtarı yok.');
@@ -50,17 +50,24 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       return;
     }
 
-    if (AUTH_TOKEN) {
+    let authTokenId = null;
+    if (AUTH_TOKEN_ENV || hasTokens()) {
       const bearer = req.headers['authorization']?.replace(/^Bearer\s+/i, '');
       const auth = req.headers['x-api-key'] || bearer;
-      if (auth !== AUTH_TOKEN) {
-        sendJson(res, 401, { error: { type: 'authentication_error', message: 'Geçersiz API anahtarı' } });
+      if (!auth) {
+        sendJson(res, 401, { error: { type: 'authentication_error', message: 'Geçersiz erişim anahtarı' } });
         return;
       }
+      const result = validateToken(auth, AUTH_TOKEN_ENV);
+      if (!result.valid) {
+        sendJson(res, 401, { error: { type: 'authentication_error', message: 'Geçersiz erişim anahtarı' } });
+        return;
+      }
+      authTokenId = result.id;
     }
 
     if (pathname === '/v1/messages' && req.method === 'POST') {
-      await handleMessages(req, res);
+      await handleMessages(req, res, authTokenId);
       return;
     }
     if (pathname === '/v1/models' && req.method === 'GET') {
@@ -123,7 +130,7 @@ async function readJsonBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-async function handleMessages(req, res) {
+async function handleMessages(req, res, authTokenId) {
   const body = await readJsonBody(req);
 
   const messages = [];
@@ -188,8 +195,8 @@ async function handleMessages(req, res) {
     body: JSON.stringify(payload),
   });
 
-  if (keyEntry.id !== null) {
-    logRequest(keyEntry.id, body.model, !!body.stream, upstream.status);
+  if (keyEntry.id !== null || authTokenId !== null) {
+    logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId);
   }
 
   if (!upstream.ok) {

@@ -71,7 +71,7 @@
   /* --- STATS --- */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 1px;
     background: var(--border);
     border: 1px solid var(--border);
@@ -288,6 +288,10 @@
     <div class="value" id="activeKeys">-</div>
   </div>
   <div class="stat-card">
+    <div class="label">Aktif Token</div>
+    <div class="value" id="activeTokens">-</div>
+  </div>
+  <div class="stat-card">
     <div class="label">Hata Orani</div>
     <div class="value" id="errorRate">-</div>
   </div>
@@ -301,6 +305,18 @@
     <button type="submit" class="btn-primary">Ekle</button>
   </form>
   <div id="keysContainer">
+    <div class="empty">Yukleniyor...</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">Erisim Anahtarlari</div>
+  <form class="add-form" id="addTokenForm">
+    <input type="text" name="token" placeholder="token-..." required>
+    <input type="text" name="label" placeholder="etiket">
+    <button type="submit" class="btn-primary">Ekle</button>
+  </form>
+  <div id="tokensContainer">
     <div class="empty">Yukleniyor...</div>
   </div>
 </div>
@@ -352,6 +368,7 @@ async function loadStats() {
     document.getElementById('totalRequests').textContent = formatNumber(stats.total_requests);
     document.getElementById('todayRequests').textContent = formatNumber(stats.today_requests);
     document.getElementById('activeKeys').textContent = stats.active_keys;
+    document.getElementById('activeTokens').textContent = stats.active_tokens;
     const errorRate = stats.total_requests > 0
       ? ((stats.error_requests / stats.total_requests) * 100).toFixed(1) + '%'
       : '0%';
@@ -471,8 +488,78 @@ document.getElementById('addKeyForm').addEventListener('submit', async (e) => {
   }
 });
 
+async function loadTokens() {
+  try {
+    const tokens = await apiFetch('/tokens');
+    const container = document.getElementById('tokensContainer');
+    if (tokens.length === 0) {
+      container.innerHTML = '<div class="empty">Henuz erisim anahtari eklenmedi</div>';
+      return;
+    }
+    container.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Etiket</th>
+        <th>Token</th>
+        <th>Durum</th>
+        <th>Istek</th>
+        <th>Hata</th>
+        <th>Son Kullanim</th>
+        <th>Islem</th>
+      </tr></thead>
+      <tbody>${tokens.map(t => `<tr>
+        <td>${escHtml(t.label || '-')}</td>
+        <td class="key-cell">${escHtml(t.token)}</td>
+        <td><span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'}">${t.is_active ? 'Aktif' : 'Pasif'}</span></td>
+        <td>${formatNumber(t.request_count)}</td>
+        <td>${t.error_count > 0 ? '<span class="error-rate">' + formatNumber(t.error_count) + '</span>' : '0'}</td>
+        <td>${formatDate(t.last_used_at)}</td>
+        <td class="actions">
+          <button class="btn-sm ${t.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleToken(${t.id}, ${!t.is_active})">${t.is_active ? 'Devre Disi' : 'Etkinlestir'}</button>
+          <button class="btn-sm btn-danger" onclick="deleteToken(${t.id})">Sil</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  } catch (err) {
+    console.error('Token listesi yuklenemedi:', err);
+  }
+}
+
+async function toggleToken(id, isActive) {
+  try {
+    await apiFetch('/tokens/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+    await refresh();
+  } catch (err) {
+    alert('Hata: ' + err.message);
+  }
+}
+
+async function deleteToken(id) {
+  if (!confirm('Bu erisim anahtarini silmek istediginizden emin misiniz?')) return;
+  try {
+    await apiFetch('/tokens/' + id, { method: 'DELETE' });
+    await refresh();
+  } catch (err) {
+    alert('Hata: ' + err.message);
+  }
+}
+
+document.getElementById('addTokenForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const token = form.token.value.trim();
+  const label = form.label.value.trim();
+  if (!token) return;
+  try {
+    await apiFetch('/tokens', { method: 'POST', body: JSON.stringify({ token, label }) });
+    form.reset();
+    await refresh();
+  } catch (err) {
+    alert('Hata: ' + err.message);
+  }
+});
+
 async function refresh() {
-  await Promise.all([loadStats(), loadKeys()]);
+  await Promise.all([loadStats(), loadKeys(), loadTokens()]);
 }
 
 refresh();
