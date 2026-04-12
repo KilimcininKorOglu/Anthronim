@@ -15,6 +15,10 @@ const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
 let modelCache = null;
 let modelCacheTime = 0;
 
+const authFailures = new Map();
+const MAX_FAILURES = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
+
 let cachedHtml = null;
 
 function loadHtml() {
@@ -52,12 +56,30 @@ function safeEqual(a, b) {
   return timingSafeEqual(bufA, bufB);
 }
 
+function getClientIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+}
+
 function requireAuth(req, res) {
+  const ip = getClientIp(req);
+  const record = authFailures.get(ip);
+  if (record && record.count >= MAX_FAILURES && Date.now() < record.resetAt) {
+    res.writeHead(429, { 'Content-Type': 'text/plain', 'Retry-After': String(Math.ceil((record.resetAt - Date.now()) / 1000)) });
+    res.end('Too Many Requests');
+    return false;
+  }
   if (!checkBasicAuth(req)) {
+    const now = Date.now();
+    if (!record || now >= record.resetAt) {
+      authFailures.set(ip, { count: 1, resetAt: now + LOCKOUT_MS });
+    } else {
+      record.count++;
+    }
     res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Anthronim Admin"', 'Content-Type': 'text/plain' });
     res.end('Unauthorized');
     return false;
   }
+  authFailures.delete(ip);
   return true;
 }
 
