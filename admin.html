@@ -412,6 +412,13 @@
     </div>
   </div>
 
+  <div class="section">
+    <div class="section-header">Kullanılabilir Modeller (NVIDIA NIM)</div>
+    <div id="modelList">
+      <div class="empty">Yükleniyor...</div>
+    </div>
+  </div>
+
   <div class="footer">Otomatik yenileme: 30s</div>
 
   <script>
@@ -642,8 +649,38 @@
       }
     });
 
+    let modelsLoaded = false;
+
+    async function loadModels() {
+      if (modelsLoaded) return;
+      try {
+        const res = await apiFetch('/models');
+        const models = res.data || [];
+        const container = document.getElementById('modelList');
+        if (models.length === 0) {
+          container.innerHTML = '<div class="empty">Model bulunamadı</div>';
+          return;
+        }
+        const grouped = {};
+        for (const m of models) {
+          const owner = m.owned_by || 'bilinmeyen';
+          if (!grouped[owner]) grouped[owner] = [];
+          grouped[owner].push(m.id);
+        }
+        const owners = Object.keys(grouped).sort();
+        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Sağlayıcı</th><th>Model</th></tr></thead><tbody>' +
+          owners.flatMap(owner => grouped[owner].map((id, i) =>
+            `<tr><td>${i === 0 ? escHtml(owner) : ''}</td><td class="key-cell">${escHtml(id)}</td></tr>`
+          )).join('') +
+          '</tbody></table></div>';
+        modelsLoaded = true;
+      } catch (err) {
+        console.error('Model listesi yüklenemedi:', err);
+      }
+    }
+
     async function refresh() {
-      await Promise.all([loadStats(), loadKeys(), loadTokens()]);
+      await Promise.all([loadStats(), loadKeys(), loadTokens(), loadModels()]);
     }
 
     refresh();

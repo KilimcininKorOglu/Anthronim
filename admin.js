@@ -9,6 +9,11 @@ const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASS = process.env.ADMIN_PASS;
 const adminEnabled = !!(ADMIN_USER && ADMIN_PASS);
 
+const NVIDIA_MODELS_URL = 'https://integrate.api.nvidia.com/v1/models';
+const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
+let modelCache = null;
+let modelCacheTime = 0;
+
 let cachedHtml = null;
 
 function loadHtml() {
@@ -83,6 +88,22 @@ export async function handleAdmin(req, res, pathname) {
   // GET /admin/api/stats
   if (pathname === '/admin/api/stats' && req.method === 'GET') {
     sendJson(res, 200, getStats());
+    return;
+  }
+
+  // GET /admin/api/models
+  if (pathname === '/admin/api/models' && req.method === 'GET') {
+    const now = Date.now();
+    if (!modelCache || (now - modelCacheTime) >= MODEL_CACHE_TTL) {
+      try {
+        const upstream = await fetch(NVIDIA_MODELS_URL);
+        if (upstream.ok) {
+          modelCache = await upstream.json();
+          modelCacheTime = now;
+        }
+      } catch (e) { /* use stale cache */ }
+    }
+    sendJson(res, 200, modelCache || { object: 'list', data: [] });
     return;
   }
 

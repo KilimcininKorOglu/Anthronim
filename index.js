@@ -12,7 +12,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const AUTH_TOKEN_ENV = process.env.AUTH_TOKEN;
 
-const MODEL_CACHE_TTL = 3600000;
+const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
 let modelCache = null;
 let modelCacheTime = 0;
 
