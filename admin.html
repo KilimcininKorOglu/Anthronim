@@ -54,7 +54,6 @@
       font-size: 14px;
       font-weight: 700;
       letter-spacing: 2px;
-      text-transform: uppercase;
     }
 
     .header-meta {
@@ -347,7 +346,6 @@
 
   <div class="header">
     <h1>Anthronim // Yönetim</h1>
-    <div class="header-meta"><span class="pulse"></span>Aktif</div>
   </div>
 
   <div class="stats-grid">
@@ -374,6 +372,20 @@
   </div>
 
   <div class="section">
+    <div class="section-header">Saatlik İstek Grafiği / Son 24 Saat</div>
+    <div class="chart-container" id="hourlyChart">
+      <div class="empty">Yükleniyor...</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">Model Kullanımı</div>
+    <div id="modelStats">
+      <div class="empty">Yükleniyor...</div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-header">API Anahtarları</div>
     <form class="add-form" id="addKeyForm">
       <input type="text" name="key" placeholder="nvapi-..." required>
@@ -394,20 +406,6 @@
       <button type="submit" class="btn-primary">Ekle</button>
     </form>
     <div id="tokensContainer">
-      <div class="empty">Yükleniyor...</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-header">Saatlik İstek Grafiği / Son 24 Saat</div>
-    <div class="chart-container" id="hourlyChart">
-      <div class="empty">Yükleniyor...</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-header">Model Kullanımı</div>
-    <div id="modelStats">
       <div class="empty">Yükleniyor...</div>
     </div>
   </div>
