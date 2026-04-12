@@ -4,3 +4,6 @@ node_modules/
 !.env.example
 key.txt
 docker-data/
+anthronim.db
+anthronim.db-wal
+anthronim.db-shm
