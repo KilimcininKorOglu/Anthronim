@@ -63,6 +63,17 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       sendJson(res, 200, await getModels());
       return;
     }
+    if (pathname.startsWith('/v1/models/') && req.method === 'GET') {
+      const modelId = pathname.slice(11);
+      const models = await getModels();
+      const model = models.data.find(m => m.id === modelId);
+      if (model) {
+        sendJson(res, 200, model);
+      } else {
+        sendJson(res, 404, { error: { type: 'not_found', message: 'Model bulunamadı' } });
+      }
+      return;
+    }
 
     if (pathname.startsWith('/admin')) {
       await handleAdmin(req, res, pathname);
@@ -105,6 +116,35 @@ server.listen(PORT, HOST, () => {
   console.log(`Anthronim http://${HOST}:${PORT} adresinde dinliyor.`);
 });
 
+const UNSUPPORTED = { supported: false };
+const SUPPORTED = { supported: true };
+const DEFAULT_CAPABILITIES = {
+  batch: UNSUPPORTED,
+  citations: UNSUPPORTED,
+  code_execution: UNSUPPORTED,
+  context_management: { supported: false, clear_thinking_20251015: UNSUPPORTED, clear_tool_uses_20250919: UNSUPPORTED, compact_20260112: UNSUPPORTED },
+  effort: { supported: false, high: UNSUPPORTED, low: UNSUPPORTED, max: UNSUPPORTED, medium: UNSUPPORTED },
+  image_input: UNSUPPORTED,
+  pdf_input: UNSUPPORTED,
+  structured_outputs: SUPPORTED,
+  thinking: { supported: true, types: { adaptive: UNSUPPORTED, enabled: SUPPORTED } },
+};
+
+function toAnthropicModel(m) {
+  const created = m.created ? new Date(m.created * 1000).toISOString() : '1970-01-01T00:00:00Z';
+  const parts = m.id.split('/');
+  const name = parts.length > 1 ? parts[1] : m.id;
+  return {
+    id: m.id,
+    type: 'model',
+    display_name: name,
+    created_at: created,
+    max_input_tokens: 131072,
+    max_tokens: 16384,
+    capabilities: DEFAULT_CAPABILITIES,
+  };
+}
+
 async function getModels() {
   const now = Date.now();
   if (modelCache && (now - modelCacheTime) < MODEL_CACHE_TTL) {
@@ -113,13 +153,20 @@ async function getModels() {
   try {
     const res = await fetch(`${API_BASE}/models`);
     if (res.ok) {
-      modelCache = await res.json();
+      const nvidia = await res.json();
+      const data = (nvidia.data || []).map(toAnthropicModel);
+      modelCache = {
+        data,
+        has_more: false,
+        first_id: data.length > 0 ? data[0].id : null,
+        last_id: data.length > 0 ? data[data.length - 1].id : null,
+      };
       modelCacheTime = now;
     }
   } catch (e) {
     // Fetch failed; return stale cache or empty
   }
-  return modelCache || { object: 'list', data: [] };
+  return modelCache || { data: [], has_more: false, first_id: null, last_id: null };
 }
 
 function sendJson(res, status, data) {
