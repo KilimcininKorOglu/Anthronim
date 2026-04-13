@@ -27,7 +27,6 @@ services:
   dev:
     build:
       context: .
-      target: builder
     user: "node"
     ports:
       - "${PORT:-8787}:8787"
