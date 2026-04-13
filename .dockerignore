@@ -13,3 +13,5 @@ docker-data
 *.md
 LICENSE
 key.txt
+*.pem
+*.key
