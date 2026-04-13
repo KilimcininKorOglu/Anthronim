@@ -123,7 +123,7 @@ export async function handleAdmin(req, res, pathname) {
   // GET /admin — Dashboard HTML
   if (pathname === '/admin' && req.method === 'GET') {
     const html = loadHtml();
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" });
     res.end(html);
     return;
   }
