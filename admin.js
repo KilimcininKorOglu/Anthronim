@@ -20,6 +20,13 @@ const authFailures = new Map();
 const MAX_FAILURES = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of authFailures) {
+    if (now >= record.resetAt) authFailures.delete(ip);
+  }
+}, 5 * 60 * 1000);
+
 let cachedHtml = null;
 
 function loadHtml() {
