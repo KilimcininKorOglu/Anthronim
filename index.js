@@ -1,10 +1,12 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey } from './db.js';
+import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs } from './db.js';
 import { handleAdmin, getClientIp, authFailures, MAX_FAILURES, LOCKOUT_MS } from './admin.js';
 
 loadDotEnv();
 initDb();
+cleanupOldLogs();
+setInterval(cleanupOldLogs, 6 * 60 * 60 * 1000);
 
 const API_BASE = 'https://integrate.api.nvidia.com/v1';
 const indexHtml = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');

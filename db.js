@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || join(__dirname, 'anthronim.db');
+const LOG_RETENTION_DAYS = parseInt(process.env.LOG_RETENTION_DAYS || '30', 10);
 
 function hashToken(token) {
   return createHash('sha256').update(token).digest('hex');
@@ -47,6 +48,7 @@ let stmtIncrementTokenError;
 let stmtInsertLog;
 let stmtGetStats;
 let stmtGetHourlyStats;
+let stmtCleanupLogs;
 
 export function initDb() {
   db = new Database(DB_PATH);
@@ -145,6 +147,8 @@ export function initDb() {
       updateToken.run(hashToken(row.token), row.id);
     }
   }
+
+  stmtCleanupLogs = db.prepare("DELETE FROM request_log WHERE created_at < datetime('now', '-' || ? || ' days')");
 }
 
 // --- API Key cache ---
@@ -275,6 +279,11 @@ export function logRequest(keyId, model, stream, statusCode, authTokenId = null,
       stmtIncrementTokenError.run(authTokenId);
     }
   }
+}
+
+export function cleanupOldLogs() {
+  const result = stmtCleanupLogs.run(LOG_RETENTION_DAYS);
+  if (result.changes > 0) console.log(`${result.changes} eski log kaydı silindi`);
 }
 
 export function getLogs({ limit = 100, offset = 0, statusMin = null, model = null } = {}) {
