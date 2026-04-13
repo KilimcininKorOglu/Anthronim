@@ -8,7 +8,7 @@ initDb();
 cleanupOldLogs();
 setInterval(cleanupOldLogs, parseInt(process.env.LOG_CLEANUP_HOURS || '6', 10) * 60 * 60 * 1000);
 
-const API_BASE = 'https://integrate.api.nvidia.com/v1';
+const API_BASE = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
 const indexHtml = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const HOST = process.env.HOST || '0.0.0.0';
