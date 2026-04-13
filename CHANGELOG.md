@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.1] - 2026-04-14
+
+### Changed
+- Update README with all configurable env vars and new features
+
+### Fixed
+- Make NVIDIA base URL configurable via NVIDIA_BASE_URL env var
+- Make cleanup intervals configurable via environment variables
+- Make hardcoded limits configurable via environment variables
+
 ## [1.3.0] - 2026-04-14
 
 ### Added
