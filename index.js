@@ -240,7 +240,7 @@ function loadDotEnv() {
   }
 }
 
-const MAX_BODY = 10 * 1024 * 1024;
+const MAX_BODY = parseInt(process.env.PROXY_MAX_BODY_MB || '10', 10) * 1024 * 1024;
 
 async function readJsonBody(req) {
   const chunks = [];

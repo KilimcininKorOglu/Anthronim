@@ -18,8 +18,8 @@ let modelCache = null;
 let modelCacheTime = 0;
 
 export const authFailures = new Map();
-export const MAX_FAILURES = 5;
-export const LOCKOUT_MS = 15 * 60 * 1000;
+export const MAX_FAILURES = parseInt(process.env.MAX_AUTH_FAILURES || '5', 10);
+export const LOCKOUT_MS = parseInt(process.env.LOCKOUT_MINUTES || '15', 10) * 60 * 1000;
 
 setInterval(() => {
   const now = Date.now();
@@ -115,7 +115,7 @@ function maskKey(key) {
   return key.slice(0, 8) + '****...' + key.slice(-4);
 }
 
-const MAX_BODY = 1 * 1024 * 1024;
+const MAX_BODY = parseInt(process.env.ADMIN_MAX_BODY_MB || '1', 10) * 1024 * 1024;
 
 async function readJsonBody(req) {
   const chunks = [];
