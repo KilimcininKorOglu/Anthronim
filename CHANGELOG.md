@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.3.0] - 2026-04-14
+
+### Added
+- Auto-deactivate API keys on 403 auth failure from NVIDIA
+- Brute-force protection on proxy auth gate (shared lockout with admin)
+- Exponential backoff for brute-force lockout (doubles per trigger, max 4h)
+- HEALTHCHECK directive in Dockerfile and docker-compose
+- Request log retention policy with periodic cleanup (LOG_RETENTION_DAYS)
+- TRUST_PROXY env var to control X-Forwarded-For trust
+- Open Graph and Twitter Card meta tags to landing page
+- Standard meta tags across all HTML pages
+- Upstream error logs page and admin logs API endpoint
+- Error detail capture in request log
+
+### Changed
+- Auth tokens now stored as SHA-256 hashes instead of plaintext
+- hasTokens() counts only active tokens to prevent self-lockout
+- Upstream error bodies parsed and filtered before storage
+- Dev compose service uses runtime stage instead of builder
+- Console error logs sanitized (message only, no stack traces or raw data)
+- Prepared statements for modelStats and tokenStats cached at init
+- Docker base image pinned to SHA256 digest
+
+### Fixed
+- X-Forwarded-For spoofing bypass on brute-force lockout
+- Dev compose service missing security hardening directives
+- Package-lock.json version mismatch with package.json
+- Parse think tags in non-streaming responses
+- Create data directory in Dockerfile and add logs.html to image
+
 ## [1.2.0] - 2026-04-13
 
 ### Fixed
