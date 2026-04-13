@@ -26,7 +26,7 @@ setInterval(() => {
   for (const [ip, record] of authFailures) {
     if (now >= record.resetAt) authFailures.delete(ip);
   }
-}, 5 * 60 * 1000);
+}, parseInt(process.env.LOCKOUT_CLEANUP_MINUTES || '5', 10) * 60 * 1000);
 
 let cachedHtml = null;
 let cachedLogsHtml = null;

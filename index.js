@@ -6,7 +6,7 @@ import { handleAdmin, getClientIp, authFailures, MAX_FAILURES, LOCKOUT_MS } from
 loadDotEnv();
 initDb();
 cleanupOldLogs();
-setInterval(cleanupOldLogs, 6 * 60 * 60 * 1000);
+setInterval(cleanupOldLogs, parseInt(process.env.LOG_CLEANUP_HOURS || '6', 10) * 60 * 60 * 1000);
 
 const API_BASE = 'https://integrate.api.nvidia.com/v1';
 const indexHtml = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
