@@ -44,5 +44,11 @@ services:
     environment:
       - DB_PATH=/app/data/anthronim.db
     command: node --watch index.js
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
     profiles:
       - dev
