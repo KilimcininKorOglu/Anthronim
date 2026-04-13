@@ -86,9 +86,12 @@ export function initDb() {
     CREATE INDEX IF NOT EXISTS idx_request_log_api_key_id ON request_log(api_key_id);
   `);
 
-  // Idempotent column addition for auth_token_id
+  // Idempotent column additions
   try {
     db.exec('ALTER TABLE request_log ADD COLUMN auth_token_id INTEGER');
+  } catch (e) { /* column already exists */ }
+  try {
+    db.exec('ALTER TABLE request_log ADD COLUMN error_detail TEXT');
   } catch (e) { /* column already exists */ }
   db.exec('CREATE INDEX IF NOT EXISTS idx_request_log_auth_token_id ON request_log(auth_token_id)');
 
@@ -111,7 +114,7 @@ export function initDb() {
   stmtIncrementTokenError = db.prepare('UPDATE auth_tokens SET error_count = error_count + 1 WHERE id = ?');
 
   // Logging & stats statements
-  stmtInsertLog = db.prepare('INSERT INTO request_log (api_key_id, model, stream, status_code, auth_token_id) VALUES (?, ?, ?, ?, ?)');
+  stmtInsertLog = db.prepare('INSERT INTO request_log (api_key_id, model, stream, status_code, auth_token_id, error_detail) VALUES (?, ?, ?, ?, ?, ?)');
   stmtGetStats = db.prepare(`
     SELECT
       (SELECT COUNT(*) FROM request_log) AS total_requests,
@@ -244,8 +247,8 @@ export function hasTokens() {
 
 // --- Logging ---
 
-export function logRequest(keyId, model, stream, statusCode, authTokenId = null) {
-  stmtInsertLog.run(keyId, model, stream ? 1 : 0, statusCode, authTokenId);
+export function logRequest(keyId, model, stream, statusCode, authTokenId = null, errorDetail = null) {
+  stmtInsertLog.run(keyId, model, stream ? 1 : 0, statusCode, authTokenId, errorDetail);
   if (keyId !== null) {
     stmtIncrementRequest.run(keyId);
     if (statusCode >= 400) {
@@ -258,6 +261,23 @@ export function logRequest(keyId, model, stream, statusCode, authTokenId = null)
       stmtIncrementTokenError.run(authTokenId);
     }
   }
+}
+
+export function getLogs({ limit = 100, offset = 0, statusMin = null, model = null } = {}) {
+  const conditions = [];
+  const params = [];
+  if (statusMin !== null) {
+    conditions.push('status_code >= ?');
+    params.push(statusMin);
+  }
+  if (model) {
+    conditions.push('model = ?');
+    params.push(model);
+  }
+  const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+  const total = db.prepare(`SELECT COUNT(*) AS count FROM request_log ${where}`).get(...params).count;
+  const logs = db.prepare(`SELECT id, api_key_id, auth_token_id, model, stream, status_code, error_detail, created_at FROM request_log ${where} ORDER BY id DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);
+  return { total, logs };
 }
 
 // --- Stats ---

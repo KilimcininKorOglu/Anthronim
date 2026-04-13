@@ -293,13 +293,17 @@ async function handleMessages(req, res, authTokenId) {
     body: JSON.stringify(payload),
   });
 
-  if (keyEntry.id !== null || authTokenId !== null) {
-    logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId);
-  }
-
   if (!upstream.ok) {
+    const errorBody = await upstream.text().catch(() => '');
+    if (keyEntry.id !== null || authTokenId !== null) {
+      logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId, errorBody.slice(0, 4096));
+    }
     sendJson(res, upstream.status, { error: { type: 'api_error', message: 'Upstream API hatası' } });
     return;
+  }
+
+  if (keyEntry.id !== null || authTokenId !== null) {
+    logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId);
   }
 
   if (body.stream) {
