@@ -11,6 +11,7 @@ const ADMIN_PASS = process.env.ADMIN_PASS;
 const AUTH_TOKEN_ENV = process.env.AUTH_TOKEN;
 const adminEnabled = !!(ADMIN_USER && ADMIN_PASS);
 
+const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
 const NVIDIA_MODELS_URL = 'https://integrate.api.nvidia.com/v1/models';
 const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
 let modelCache = null;
@@ -73,8 +74,11 @@ function safeEqual(a, b) {
 }
 
 function getClientIp(req) {
-  const xff = req.headers['x-forwarded-for'];
-  return xff ? xff.split(',').pop().trim() : req.socket.remoteAddress;
+  if (TRUST_PROXY) {
+    const xff = req.headers['x-forwarded-for'];
+    if (xff) return xff.split(',').pop().trim();
+  }
+  return req.socket.remoteAddress;
 }
 
 function requireAuth(req, res) {
