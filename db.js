@@ -241,7 +241,7 @@ export function listTokens() {
 }
 
 export function hasTokens() {
-  const row = db.prepare('SELECT COUNT(*) AS count FROM auth_tokens').get();
+  const row = db.prepare('SELECT COUNT(*) AS count FROM auth_tokens WHERE is_active = 1').get();
   return row.count > 0;
 }
 
