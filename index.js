@@ -1,6 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens } from './db.js';
+import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey } from './db.js';
 import { handleAdmin } from './admin.js';
 
 loadDotEnv();
@@ -297,6 +297,11 @@ async function handleMessages(req, res, authTokenId) {
     const errorBody = await upstream.text().catch(() => '');
     if (keyEntry.id !== null || authTokenId !== null) {
       logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId, errorBody.slice(0, 4096));
+    }
+    // Auto-deactivate key on 403 auth failure
+    if (upstream.status === 403 && keyEntry.id !== null && errorBody.includes('Authorization failed')) {
+      toggleKey(keyEntry.id, false);
+      console.warn(`API key #${keyEntry.id} deaktive edildi (403 Authorization failed)`);
     }
     sendJson(res, upstream.status, { error: { type: 'api_error', message: 'Upstream API hatası' } });
     return;
