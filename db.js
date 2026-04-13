@@ -1,10 +1,14 @@
 import Database from 'better-sqlite3';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || join(__dirname, 'anthronim.db');
+
+function hashToken(token) {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 function safeEqual(a, b) {
   const bufA = Buffer.from(a);
@@ -132,6 +136,15 @@ export function initDb() {
     GROUP BY hour
     ORDER BY hour
   `);
+
+  // Migrate plaintext tokens to SHA-256 hashes
+  const tokenRows = db.prepare('SELECT id, token FROM auth_tokens').all();
+  const updateToken = db.prepare('UPDATE auth_tokens SET token = ? WHERE id = ?');
+  for (const row of tokenRows) {
+    if (row.token.length !== 64 || !/^[a-f0-9]{64}$/.test(row.token)) {
+      updateToken.run(hashToken(row.token), row.id);
+    }
+  }
 }
 
 // --- API Key cache ---
@@ -209,8 +222,9 @@ export function hasKeys() {
 
 export function validateToken(token, envFallback) {
   const map = loadActiveTokens();
-  if (map.has(token)) {
-    return { id: map.get(token), valid: true };
+  const hashed = hashToken(token);
+  if (map.has(hashed)) {
+    return { id: map.get(hashed), valid: true };
   }
   if (envFallback && safeEqual(token, envFallback)) {
     return { id: null, valid: true };
@@ -219,7 +233,7 @@ export function validateToken(token, envFallback) {
 }
 
 export function addToken(token, label = '') {
-  const result = stmtInsertToken.run(token, label);
+  const result = stmtInsertToken.run(hashToken(token), label);
   invalidateTokenCache();
   return result.lastInsertRowid;
 }
