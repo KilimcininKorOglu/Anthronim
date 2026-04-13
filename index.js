@@ -630,7 +630,7 @@ async function handleStream(upstream, model, res) {
         try {
           parsed = JSON.parse(data);
         } catch (e) {
-          console.error('JSON çözümleme hatası:', data);
+          console.error('JSON çözümleme hatası: uzunluk=%d', data.length);
           continue;
         }
 
