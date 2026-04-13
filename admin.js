@@ -17,9 +17,9 @@ const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
 let modelCache = null;
 let modelCacheTime = 0;
 
-const authFailures = new Map();
-const MAX_FAILURES = 5;
-const LOCKOUT_MS = 15 * 60 * 1000;
+export const authFailures = new Map();
+export const MAX_FAILURES = 5;
+export const LOCKOUT_MS = 15 * 60 * 1000;
 
 setInterval(() => {
   const now = Date.now();
@@ -73,7 +73,7 @@ function safeEqual(a, b) {
   return timingSafeEqual(bufA, bufB);
 }
 
-function getClientIp(req) {
+export function getClientIp(req) {
   if (TRUST_PROXY) {
     const xff = req.headers['x-forwarded-for'];
     if (xff) return xff.split(',').pop().trim();

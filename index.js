@@ -1,7 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey } from './db.js';
-import { handleAdmin } from './admin.js';
+import { handleAdmin, getClientIp, authFailures, MAX_FAILURES, LOCKOUT_MS } from './admin.js';
 
 loadDotEnv();
 initDb();
@@ -86,6 +86,14 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
 
     let authTokenId = null;
     if (AUTH_TOKEN_ENV || hasTokens()) {
+      const ip = getClientIp(req);
+      const now = Date.now();
+      const record = authFailures.get(ip);
+      if (record && record.count >= MAX_FAILURES && now < record.resetAt) {
+        res.writeHead(429, { 'Content-Type': 'text/plain', 'Retry-After': String(Math.ceil((record.resetAt - now) / 1000)) });
+        res.end('Çok fazla başarısız deneme');
+        return;
+      }
       const bearer = req.headers['authorization']?.replace(/^Bearer\s+/i, '');
       const auth = req.headers['x-api-key'] || bearer;
       if (!auth) {
@@ -94,9 +102,15 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       }
       const result = validateToken(auth, AUTH_TOKEN_ENV);
       if (!result.valid) {
+        if (!record || now >= record.resetAt) {
+          authFailures.set(ip, { count: 1, resetAt: now + LOCKOUT_MS, lockoutCount: 0 });
+        } else {
+          record.count++;
+        }
         sendJson(res, 401, { error: { type: 'authentication_error', message: 'Geçersiz erişim anahtarı' } });
         return;
       }
+      authFailures.delete(ip);
       authTokenId = result.id;
     }
 
