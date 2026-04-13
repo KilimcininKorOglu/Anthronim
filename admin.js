@@ -28,12 +28,20 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 let cachedHtml = null;
+let cachedLogsHtml = null;
 
 function loadHtml() {
   if (!cachedHtml) {
     cachedHtml = fs.readFileSync(join(__dirname, 'admin.html'), 'utf8');
   }
   return cachedHtml;
+}
+
+function loadLogsHtml() {
+  if (!cachedLogsHtml) {
+    cachedLogsHtml = fs.readFileSync(join(__dirname, 'logs.html'), 'utf8');
+  }
+  return cachedLogsHtml;
 }
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
@@ -130,6 +138,14 @@ export async function handleAdmin(req, res, pathname) {
   // GET /admin — Dashboard HTML
   if (pathname === '/admin' && req.method === 'GET') {
     const html = loadHtml();
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" });
+    res.end(html);
+    return;
+  }
+
+  // GET /admin/logs — Logs HTML
+  if (pathname === '/admin/logs' && req.method === 'GET') {
+    const html = loadLogsHtml();
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" });
     res.end(html);
     return;

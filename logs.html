@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anthronim // Loglar</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+    :root {
+      --bg: #000000;
+      --surface: #0a0a0a;
+      --border: #1a1a1a;
+      --green: #00ff41;
+      --green-dim: #00cc33;
+      --green-muted: #006b1d;
+      --green-faint: #002a0a;
+      --red: #ff2d2d;
+      --red-dim: #661212;
+      --yellow: #ffcc00;
+      --yellow-dim: #665200;
+      --text: #00ff41;
+      --text-dim: #00aa2b;
+      --text-muted: #005f17;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      font-size: 13px;
+    }
+
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header h1 { font-size: 18px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+
+    .header-nav { display: flex; gap: 16px; }
+
+    .header-nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .header-nav a:hover { color: var(--green); }
+
+    .filters {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .filters select, .filters input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .filters select:focus, .filters input:focus { border-color: var(--green-muted); }
+
+    .filters label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 1px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:hover td { background: var(--surface); }
+
+    .status-2xx { color: var(--green); }
+    .status-4xx { color: var(--yellow); }
+    .status-5xx { color: var(--red); }
+
+    .error-detail {
+      display: none;
+      padding: 8px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-dim);
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 4px;
+    }
+
+    .error-detail.open { display: block; }
+
+    .has-detail { cursor: pointer; }
+    .has-detail:hover { text-decoration: underline; }
+
+    .pagination {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .pagination button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 16px;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .pagination button:hover { border-color: var(--green-muted); }
+    .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .empty { color: var(--text-muted); padding: 24px; text-align: center; }
+
+    .footer {
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>Anthronim // Upstream Loglar</h1>
+    <div class="header-nav">
+      <a href="/admin">Panel</a>
+    </div>
+  </div>
+
+  <div class="filters">
+    <label>Durum</label>
+    <select id="filterStatus">
+      <option value="error">Sadece Hatalar</option>
+      <option value="all">Tümü</option>
+    </select>
+    <label>Model</label>
+    <input type="text" id="filterModel" placeholder="ör: meta/llama-3..." style="width: 220px">
+    <label>Limit</label>
+    <select id="filterLimit">
+      <option value="50">50</option>
+      <option value="100" selected>100</option>
+      <option value="200">200</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tarih</th>
+          <th>Model</th>
+          <th>Status</th>
+          <th>Key ID</th>
+          <th>Token ID</th>
+          <th>Detay</th>
+        </tr>
+      </thead>
+      <tbody id="logsBody">
+        <tr><td colspan="6" class="empty">Yükleniyor...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination">
+    <button id="prevBtn" disabled onclick="prevPage()">Önceki</button>
+    <span id="pageInfo">-</span>
+    <button id="nextBtn" disabled onclick="nextPage()">Sonraki</button>
+  </div>
+
+  <div class="footer">Otomatik yenileme: 30s</div>
+
+  <script>
+    let currentOffset = 0;
+    let currentTotal = 0;
+
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const d = new Date(dateStr + 'Z');
+      return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function statusClass(code) {
+      if (code >= 500) return 'status-5xx';
+      if (code >= 400) return 'status-4xx';
+      return 'status-2xx';
+    }
+
+    function toggleDetail(id) {
+      const el = document.getElementById('detail-' + id);
+      if (el) el.classList.toggle('open');
+    }
+
+    function truncate(s, len) {
+      if (!s) return '';
+      return s.length > len ? s.slice(0, len) + '...' : s;
+    }
+
+    async function loadLogs() {
+      const status = document.getElementById('filterStatus').value;
+      const model = document.getElementById('filterModel').value.trim();
+      const limit = parseInt(document.getElementById('filterLimit').value, 10);
+
+      const params = new URLSearchParams({ status, limit, offset: currentOffset });
+      if (model) params.set('model', model);
+
+      try {
+        const res = await fetch('/admin/api/logs?' + params.toString());
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'API hatası');
+
+        currentTotal = data.total;
+        const body = document.getElementById('logsBody');
+
+        if (!data.logs || data.logs.length === 0) {
+          body.innerHTML = '<tr><td colspan="6" class="empty">Kayıt bulunamadı</td></tr>';
+        } else {
+          body.innerHTML = data.logs.map(l => {
+            const hasDetail = l.error_detail && l.error_detail.length > 0;
+            const detailPreview = hasDetail
+              ? `<span class="has-detail" onclick="toggleDetail(${l.id})">${escHtml(truncate(l.error_detail, 60))}</span><div class="error-detail" id="detail-${l.id}">${escHtml(l.error_detail)}</div>`
+              : '-';
+            return `<tr>
+              <td>${formatDate(l.created_at)}</td>
+              <td>${escHtml(l.model || '-')}</td>
+              <td class="${statusClass(l.status_code)}">${l.status_code}</td>
+              <td>${l.api_key_id ?? '-'}</td>
+              <td>${l.auth_token_id ?? '-'}</td>
+              <td>${detailPreview}</td>
+            </tr>`;
+          }).join('');
+        }
+
+        document.getElementById('prevBtn').disabled = currentOffset === 0;
+        document.getElementById('nextBtn').disabled = currentOffset + limit >= currentTotal;
+        const page = Math.floor(currentOffset / limit) + 1;
+        const totalPages = Math.ceil(currentTotal / limit) || 1;
+        document.getElementById('pageInfo').textContent = `${page} / ${totalPages} (${currentTotal} kayıt)`;
+      } catch (err) {
+        console.error('Loglar yüklenemedi:', err);
+      }
+    }
+
+    function prevPage() {
+      const limit = parseInt(document.getElementById('filterLimit').value, 10);
+      currentOffset = Math.max(0, currentOffset - limit);
+      loadLogs();
+    }
+
+    function nextPage() {
+      const limit = parseInt(document.getElementById('filterLimit').value, 10);
+      currentOffset += limit;
+      loadLogs();
+    }
+
+    document.getElementById('filterStatus').addEventListener('change', () => { currentOffset = 0; loadLogs(); });
+    document.getElementById('filterLimit').addEventListener('change', () => { currentOffset = 0; loadLogs(); });
+    document.getElementById('filterModel').addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') { currentOffset = 0; loadLogs(); }
+    });
+
+    loadLogs();
+    setInterval(loadLogs, 30000);
+  </script>
+
+</body>
+
+</html>

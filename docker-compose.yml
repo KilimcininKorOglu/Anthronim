@@ -33,6 +33,7 @@ services:
       - ./admin.js:/app/admin.js
       - ./admin.html:/app/admin.html
       - ./index.html:/app/index.html
+      - ./logs.html:/app/logs.html
       - ./docker-data:/app/data
     environment:
       - DB_PATH=/app/data/anthronim.db
