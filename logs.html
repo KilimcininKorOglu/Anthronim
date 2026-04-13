@@ -25,7 +25,11 @@
       --text-muted: #005f17;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
@@ -47,19 +51,27 @@
       border-bottom: 1px solid var(--border);
     }
 
-    .header h1 { font-size: 18px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
 
-    .header-nav { display: flex; gap: 16px; }
+    .header-nav {
+      display: flex;
+      gap: 16px;
+    }
 
     .header-nav a {
       color: var(--text-dim);
       text-decoration: none;
       font-size: 12px;
-      text-transform: uppercase;
       letter-spacing: 1px;
     }
 
-    .header-nav a:hover { color: var(--green); }
+    .header-nav a:hover {
+      color: var(--green);
+    }
 
     .filters {
       display: flex;
@@ -69,7 +81,8 @@
       flex-wrap: wrap;
     }
 
-    .filters select, .filters input {
+    .filters select,
+    .filters input {
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text);
@@ -79,25 +92,32 @@
       outline: none;
     }
 
-    .filters select:focus, .filters input:focus { border-color: var(--green-muted); }
+    .filters select:focus,
+    .filters input:focus {
+      border-color: var(--green-muted);
+    }
 
     .filters label {
       font-size: 11px;
       color: var(--text-dim);
-      text-transform: uppercase;
       letter-spacing: 1px;
     }
 
-    .table-wrap { overflow-x: auto; }
+    .table-wrap {
+      overflow-x: auto;
+    }
 
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
 
     th {
       text-align: left;
       padding: 8px 12px;
       border-bottom: 1px solid var(--border);
       color: var(--text-dim);
-      text-transform: uppercase;
       font-size: 10px;
       letter-spacing: 1px;
       font-weight: 500;
@@ -110,11 +130,21 @@
       vertical-align: top;
     }
 
-    tr:hover td { background: var(--surface); }
+    tr:hover td {
+      background: var(--surface);
+    }
 
-    .status-2xx { color: var(--green); }
-    .status-4xx { color: var(--yellow); }
-    .status-5xx { color: var(--red); }
+    .status-2xx {
+      color: var(--green);
+    }
+
+    .status-4xx {
+      color: var(--yellow);
+    }
+
+    .status-5xx {
+      color: var(--red);
+    }
 
     .error-detail {
       display: none;
@@ -130,10 +160,17 @@
       margin-top: 4px;
     }
 
-    .error-detail.open { display: block; }
+    .error-detail.open {
+      display: block;
+    }
 
-    .has-detail { cursor: pointer; }
-    .has-detail:hover { text-decoration: underline; }
+    .has-detail {
+      cursor: pointer;
+    }
+
+    .has-detail:hover {
+      text-decoration: underline;
+    }
 
     .pagination {
       display: flex;
@@ -155,10 +192,20 @@
       cursor: pointer;
     }
 
-    .pagination button:hover { border-color: var(--green-muted); }
-    .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .pagination button:hover {
+      border-color: var(--green-muted);
+    }
 
-    .empty { color: var(--text-muted); padding: 24px; text-align: center; }
+    .pagination button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .empty {
+      color: var(--text-muted);
+      padding: 24px;
+      text-align: center;
+    }
 
     .footer {
       margin-top: 32px;
@@ -209,7 +256,9 @@
         </tr>
       </thead>
       <tbody id="logsBody">
-        <tr><td colspan="6" class="empty">Yükleniyor...</td></tr>
+        <tr>
+          <td colspan="6" class="empty">Yükleniyor...</td>
+        </tr>
       </tbody>
     </table>
   </div>
