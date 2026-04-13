@@ -246,8 +246,9 @@ export async function handleAdmin(req, res, pathname) {
       sendJson(res, 400, { error: 'Geçersiz ID' });
       return;
     }
-    if (listTokens().length <= 1 && !AUTH_TOKEN_ENV) {
-      sendJson(res, 400, { error: 'Son erişim anahtarı silinemez — AUTH_TOKEN ortam değişkeni tanımlı değil' });
+    const activeCount = listTokens().filter(t => t.is_active && t.id !== id).length;
+    if (activeCount === 0 && !AUTH_TOKEN_ENV) {
+      sendJson(res, 400, { error: 'Son aktif erişim anahtarı silinemez' });
       return;
     }
     const removed = removeToken(id);
