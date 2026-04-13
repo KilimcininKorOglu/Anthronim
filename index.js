@@ -322,7 +322,21 @@ async function handleMessages(req, res, authTokenId) {
   }
 
   if (message.content) {
-    content.push({ type: 'text', text: message.content });
+    const text = message.content;
+    if (text.startsWith('<think>')) {
+      const endIdx = text.indexOf('</think>');
+      if (endIdx !== -1) {
+        const thinking = text.slice(7, endIdx);
+        const rest = text.slice(endIdx + 8).trim();
+        if (thinking) content.push({ type: 'thinking', thinking });
+        if (rest) content.push({ type: 'text', text: rest });
+      } else {
+        // No closing tag (max_tokens truncation) — all content is thinking
+        content.push({ type: 'thinking', thinking: text.slice(7) });
+      }
+    } else {
+      content.push({ type: 'text', text });
+    }
   }
 
   if (message.tool_calls?.length) {
