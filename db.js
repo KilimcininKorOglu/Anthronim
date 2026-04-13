@@ -49,6 +49,8 @@ let stmtInsertLog;
 let stmtGetStats;
 let stmtGetHourlyStats;
 let stmtCleanupLogs;
+let stmtModelStats;
+let stmtTokenStats;
 
 export function initDb() {
   db = new Database(DB_PATH);
@@ -149,6 +151,8 @@ export function initDb() {
   }
 
   stmtCleanupLogs = db.prepare("DELETE FROM request_log WHERE created_at < datetime('now', '-' || ? || ' days')");
+  stmtModelStats = db.prepare('SELECT model, COUNT(*) AS count FROM request_log GROUP BY model ORDER BY count DESC LIMIT 10');
+  stmtTokenStats = db.prepare('SELECT id, label, request_count, error_count, last_used_at, is_active FROM auth_tokens ORDER BY request_count DESC');
 }
 
 // --- API Key cache ---
@@ -309,19 +313,8 @@ export function getStats() {
   const summary = stmtGetStats.get();
   const hourly = stmtGetHourlyStats.all();
 
-  const modelStats = db.prepare(`
-    SELECT model, COUNT(*) AS count
-    FROM request_log
-    GROUP BY model
-    ORDER BY count DESC
-    LIMIT 10
-  `).all();
-
-  const tokenStats = db.prepare(`
-    SELECT id, label, request_count, error_count, last_used_at, is_active
-    FROM auth_tokens
-    ORDER BY request_count DESC
-  `).all();
+  const modelStats = stmtModelStats.all();
+  const tokenStats = stmtTokenStats.all();
 
   return { ...summary, hourly, modelStats, tokenStats };
 }
