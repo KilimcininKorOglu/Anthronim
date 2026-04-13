@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.2.0] - 2026-04-13
+
+### Fixed
+- Add clickjacking protection headers to HTML responses
+- Check active token count in deletion guard instead of total count
+- Add periodic cleanup for expired brute-force tracking entries
+- Exclude secret file patterns from Docker build context
+- Add security hardening directives to production compose service
+- Run dev docker service as non-root user
+- Prevent deactivating last active auth token
+- Use rightmost X-Forwarded-For value for rate limiter IP
+- Return 400 for malformed request bodies
+- Prevent deleting last auth token when no env fallback
+- Add brute-force protection to admin auth
+- Sanitize upstream error responses
+- Disable CORS preflight for admin routes
+- Handle malformed tool_call arguments gracefully
+- Use constant-time comparison for auth credentials
+- Add request body size limit to prevent memory exhaustion
+- Run container as non-root user
+- Match token input width to key input in admin forms
+- Add curl to runtime image for health check
+
 ## [1.1.0] - 2026-04-13
 
 ### Added
