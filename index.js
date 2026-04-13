@@ -206,6 +206,17 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+function sanitizeErrorBody(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    const msg = parsed?.error?.message || parsed?.message || parsed?.detail || '';
+    const type = parsed?.error?.type || parsed?.error?.code || '';
+    return JSON.stringify({ type, message: msg }).slice(0, 4096);
+  } catch {
+    return raw.slice(0, 256);
+  }
+}
+
 function loadDotEnv() {
   try {
     const envPath = new URL('.env', import.meta.url);
@@ -318,7 +329,7 @@ async function handleMessages(req, res, authTokenId) {
   if (!upstream.ok) {
     const errorBody = await upstream.text().catch(() => '');
     if (keyEntry.id !== null || authTokenId !== null) {
-      logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId, errorBody.slice(0, 4096));
+      logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId, sanitizeErrorBody(errorBody));
     }
     // Auto-deactivate key on 403 auth failure
     if (upstream.status === 403 && keyEntry.id !== null && errorBody.includes('Authorization failed')) {
