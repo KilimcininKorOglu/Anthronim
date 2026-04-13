@@ -92,9 +92,15 @@ function requireAuth(req, res) {
   if (!checkBasicAuth(req)) {
     const now = Date.now();
     if (!record || now >= record.resetAt) {
-      authFailures.set(ip, { count: 1, resetAt: now + LOCKOUT_MS });
+      const prev = record ? record.lockoutCount || 0 : 0;
+      authFailures.set(ip, { count: 1, resetAt: now + LOCKOUT_MS, lockoutCount: prev });
     } else {
       record.count++;
+      if (record.count >= MAX_FAILURES) {
+        record.lockoutCount = (record.lockoutCount || 0) + 1;
+        const backoff = LOCKOUT_MS * Math.pow(2, Math.min(record.lockoutCount, 4));
+        record.resetAt = Date.now() + backoff;
+      }
     }
     res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Anthronim Admin"', 'Content-Type': 'text/plain' });
     res.end('Unauthorized');

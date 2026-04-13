@@ -103,9 +103,15 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       const result = validateToken(auth, AUTH_TOKEN_ENV);
       if (!result.valid) {
         if (!record || now >= record.resetAt) {
-          authFailures.set(ip, { count: 1, resetAt: now + LOCKOUT_MS, lockoutCount: 0 });
+          const prev = record ? record.lockoutCount || 0 : 0;
+          authFailures.set(ip, { count: 1, resetAt: now + LOCKOUT_MS, lockoutCount: prev });
         } else {
           record.count++;
+          if (record.count >= MAX_FAILURES) {
+            record.lockoutCount = (record.lockoutCount || 0) + 1;
+            const backoff = LOCKOUT_MS * Math.pow(2, Math.min(record.lockoutCount, 4));
+            record.resetAt = Date.now() + backoff;
+          }
         }
         sendJson(res, 401, { error: { type: 'authentication_error', message: 'Geçersiz erişim anahtarı' } });
         return;
