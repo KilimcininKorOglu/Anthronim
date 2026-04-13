@@ -135,7 +135,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       } else if (err instanceof SyntaxError) {
         sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'Geçersiz JSON gövdesi' } });
       } else {
-        console.error('İstek işleme hatası:', err);
+        console.error('İstek işleme hatası:', err.message || err);
         sendJson(res, 500, { error: { type: 'internal_error', message: 'Sunucu hatası' } });
       }
     } else {
@@ -693,7 +693,7 @@ async function handleStream(upstream, model, res) {
     await closeStream('end_turn');
   } catch (err) {
     if (!clientGone) {
-      console.error('Akış işleme hatası:', err);
+      console.error('Akış işleme hatası:', err.message || err);
     }
     if (!res.writableEnded) res.end();
   }
