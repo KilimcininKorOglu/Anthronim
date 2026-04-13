@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { addKey, removeKey, toggleKey, listKeys, getStats, addToken, removeToken, toggleToken, listTokens } from './db.js';
+import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, listTokens } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -138,6 +138,17 @@ export async function handleAdmin(req, res, pathname) {
   // GET /admin/api/stats
   if (pathname === '/admin/api/stats' && req.method === 'GET') {
     sendJson(res, 200, getStats());
+    return;
+  }
+
+  // GET /admin/api/logs
+  if (pathname === '/admin/api/logs' && req.method === 'GET') {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '100', 10), 500);
+    const offset = Math.max(parseInt(url.searchParams.get('offset') || '0', 10), 0);
+    const status = url.searchParams.get('status');
+    const model = url.searchParams.get('model') || null;
+    sendJson(res, 200, getLogs({ limit, offset, statusMin: status === 'error' ? 400 : null, model }));
     return;
   }
 
