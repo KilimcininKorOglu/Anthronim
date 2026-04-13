@@ -10,6 +10,13 @@ services:
     environment:
       - DB_PATH=/app/data/anthronim.db
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
 
   dev:
     build:
