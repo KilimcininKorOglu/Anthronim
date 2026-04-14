@@ -321,6 +321,18 @@ async function handleMessages(req, res, authTokenId) {
       toggleKey(keyEntry.id, false);
       console.warn(`API key #${keyEntry.id} deaktive edildi (403 Authorization failed)`);
     }
+    // Context/token limit → invalid_request_error (triggers client-side compression)
+    const lower = errorBody.toLowerCase();
+    if (upstream.status === 400 && (lower.includes('context') || lower.includes('token') || lower.includes('maximum') || lower.includes('too long'))) {
+      let msg = 'prompt is too long: request exceeds context window limit';
+      try {
+        const parsed = JSON.parse(errorBody);
+        const detail = parsed?.error?.message || parsed?.message || '';
+        if (detail) msg = 'prompt is too long: ' + detail;
+      } catch { /* empty */ }
+      sendJson(res, 400, { error: { type: 'invalid_request_error', message: msg } });
+      return;
+    }
     sendJson(res, upstream.status, { error: { type: 'api_error', message: 'Upstream API hatası' } });
     return;
   }
