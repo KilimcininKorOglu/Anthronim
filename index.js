@@ -129,6 +129,11 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
   }
 });
 
+server.timeout = 0;
+server.headersTimeout = 0;
+server.requestTimeout = 0;
+server.keepAliveTimeout = 65000;
+
 server.listen(PORT, HOST, () => {
   console.log(`Anthronim http://${HOST}:${PORT} adresinde dinliyor.`);
 });
@@ -242,6 +247,7 @@ async function readJsonBody(req) {
 }
 
 async function handleMessages(req, res, authTokenId) {
+  req.socket?.setTimeout(0);
   const body = await readJsonBody(req);
 
   if (!body.messages || !Array.isArray(body.messages)) {
@@ -503,6 +509,11 @@ async function handleStream(upstream, model, res) {
     }
   };
 
+  // SSE keepalive — prevents reverse proxy idle timeout
+  const keepaliveTimer = setInterval(() => {
+    if (!clientGone) writeSse(': keepalive\n\n');
+  }, 15000);
+
   const send = (event, data) =>
     writeSse(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
@@ -583,6 +594,7 @@ async function handleStream(upstream, model, res) {
   };
 
   const closeStream = async (reason = 'end_turn') => {
+    clearInterval(keepaliveTimer);
     await flushBuffer();
     if (hasThinkingBlock) await send('content_block_stop', { type: 'content_block_stop', index: contentIndex++ });
     if (hasTextBlock) await send('content_block_stop', { type: 'content_block_stop', index: contentIndex++ });
@@ -689,6 +701,7 @@ async function handleStream(upstream, model, res) {
 
     await closeStream('end_turn');
   } catch (err) {
+    clearInterval(keepaliveTimer);
     if (!clientGone) {
       console.error('Akış işleme hatası:', err.message || err);
     }
