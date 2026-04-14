@@ -5,7 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Anthronim</title>
-  <meta name="description" content="NVIDIA NIM modellerine Anthropic Messages API ile erişim sağlayan yüksek performanslı proxy sunucu.">
+  <meta name="description"
+    content="NVIDIA NIM modellerine Anthropic Messages API ile erişim sağlayan yüksek performanslı proxy sunucu.">
   <meta name="author" content="KilimcininKorOglu">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#000000">
@@ -14,7 +15,8 @@
   <!-- Open Graph (Facebook, LinkedIn) -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="Anthronim">
-  <meta property="og:description" content="NVIDIA NIM modellerine Anthropic Messages API ile erişim sağlayan yüksek performanslı proxy sunucu.">
+  <meta property="og:description"
+    content="NVIDIA NIM modellerine Anthropic Messages API ile erişim sağlayan yüksek performanslı proxy sunucu.">
   <meta property="og:url" content="https://nvidia.srv.hermestech.uk">
   <meta property="og:site_name" content="Anthronim">
   <meta property="og:locale" content="tr_TR">
@@ -22,7 +24,8 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Anthronim">
-  <meta name="twitter:description" content="NVIDIA NIM modellerine Anthropic Messages API ile erişim sağlayan yüksek performanslı proxy sunucu.">
+  <meta name="twitter:description"
+    content="NVIDIA NIM modellerine Anthropic Messages API ile erişim sağlayan yüksek performanslı proxy sunucu.">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
@@ -181,6 +184,54 @@
       margin-top: 12px;
     }
 
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      border: 1px solid var(--border);
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-card .value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .stat-card .label {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .chart-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 60px;
+      margin-top: 8px;
+    }
+
+    .chart-bar .bar {
+      flex: 1;
+      background: var(--green-muted);
+      min-height: 1px;
+    }
+
+    .chart-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
     .model-count {
       font-size: 11px;
       color: var(--text-muted);
@@ -211,19 +262,27 @@
   </div>
 
   <div class="section">
+    <div class="section-header">İstatistikler</div>
+    <div id="statsContainer">
+      <div class="empty">Yükleniyor...</div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-header">Claude Code Yapılandırması</div>
     <p class="config-note"><code>~/.claude/settings.json</code> dosyasına ekleyin:</p>
     <pre><code>{
   "env": {
     "ANTHROPIC_BASE_URL": "<span id="baseUrl"></span>",
     "ANTHROPIC_API_KEY": "&lt;erişim anahtarınız&gt;",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "minimaxai/minimax-m2.5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "minimaxai/minimax-m2.7",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimaxai/minimax-m2.5",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "z-ai/glm5"
   }
 }</code></pre>
     <p class="config-note">Oturum içinde model değiştirmek için: <code>/model opus</code>, <code>/model sonnet</code>,
-      <code>/model haiku</code></p>
+      <code>/model haiku</code>
+    </p>
   </div>
 
   <div class="section">
@@ -276,7 +335,54 @@
       return d.innerHTML;
     }
 
+    function formatNum(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return String(n);
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/stats');
+        if (!res.ok) throw new Error(res.status);
+        const s = await res.json();
+        const container = document.getElementById('statsContainer');
+
+        const max = Math.max(...s.hourly.map(h => h.count), 1);
+        const bars = s.hourly.map(h =>
+          `<div class="bar" style="height:${Math.max((h.count / max) * 100, 2)}%" title="${h.hour.slice(11, 16)}: ${h.count}"></div>`
+        ).join('');
+
+        const firstHour = s.hourly.length > 0 ? s.hourly[0].hour.slice(11, 16) : '';
+        const lastHour = s.hourly.length > 0 ? s.hourly[s.hourly.length - 1].hour.slice(11, 16) : '';
+
+        const topModels = (s.modelStats || []).slice(0, 5).map(m =>
+          `<tr><td>${escHtml(m.model || '-')}</td><td>${formatNum(m.count)}</td></tr>`
+        ).join('');
+
+        container.innerHTML = `
+          <div class="stats-grid">
+            <div class="stat-card"><div class="value">${formatNum(s.totalRequests)}</div><div class="label">Toplam İstek</div></div>
+            <div class="stat-card"><div class="value">${formatNum(s.todayRequests)}</div><div class="label">Bugün</div></div>
+            <div class="stat-card"><div class="value">${s.activeUsers}</div><div class="label">Aktif Kullanıcı</div></div>
+          </div>
+          ${s.hourly.length > 0 ? `
+            <div style="margin-bottom:24px">
+              <div class="chart-bar">${bars}</div>
+              <div class="chart-labels"><span>${firstHour}</span><span>Son 24 saat</span><span>${lastHour}</span></div>
+            </div>` : ''}
+          ${topModels ? `
+            <div class="table-wrap"><table>
+              <thead><tr><th>En Çok Kullanılan Modeller</th><th>İstek</th></tr></thead>
+              <tbody>${topModels}</tbody>
+            </table></div>` : ''}`;
+      } catch (err) {
+        document.getElementById('statsContainer').innerHTML = '<div class="empty">İstatistikler yüklenemedi</div>';
+      }
+    }
+
     document.getElementById('baseUrl').textContent = location.origin;
+    loadStats();
     loadModels();
   </script>
 </body>

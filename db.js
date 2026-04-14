@@ -354,3 +354,17 @@ export function getStats() {
 
   return { ...summary, hourly, modelStats, tokenStats };
 }
+
+export function getPublicStats() {
+  const summary = stmtGetStats.get();
+  const hourly = stmtGetHourlyStats.all();
+  const modelStats = stmtModelStats.all();
+
+  return {
+    totalRequests: summary.total_requests,
+    todayRequests: summary.today_requests,
+    activeUsers: summary.active_tokens,
+    hourly,
+    modelStats,
+  };
+}

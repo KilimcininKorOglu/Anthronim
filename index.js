@@ -1,6 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs } from './db.js';
+import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats } from './db.js';
 import { handleAdmin } from './admin.js';
 
 loadDotEnv();
@@ -78,6 +78,11 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       } else {
         sendJson(res, 404, { error: { type: 'not_found', message: 'Model bulunamadı' } });
       }
+      return;
+    }
+
+    if (pathname === '/stats' && req.method === 'GET') {
+      sendJson(res, 200, getPublicStats());
       return;
     }
 
