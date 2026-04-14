@@ -339,6 +339,11 @@
         padding: 6px 8px;
       }
     }
+
+    .editable {
+      cursor: pointer;
+      border-bottom: 1px dashed var(--green-muted);
+    }
   </style>
 </head>
 
@@ -544,6 +549,10 @@
       return d.innerHTML;
     }
 
+    function escAttr(s) {
+      return (s || '').replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
     async function toggleKey(id, isActive) {
       try {
         await apiFetch('/keys/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
@@ -597,8 +606,8 @@
         <th>İşlem</th>
       </tr></thead>
       <tbody>${tokens.map(t => `<tr>
-        <td>${escHtml(t.label || '-')}</td>
-        <td class="key-cell">${escHtml(t.token)}</td>
+        <td class="editable" onclick="editToken(${t.id}, 'label', '${escAttr(t.label)}')">${escHtml(t.label || '-')}</td>
+        <td class="key-cell editable" onclick="editToken(${t.id}, 'token', '${escAttr(t.token)}')">${escHtml(t.token)}</td>
         <td><span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'}">${t.is_active ? 'Aktif' : 'Pasif'}</span></td>
         <td>${formatNumber(t.request_count)}</td>
         <td>${t.error_count > 0 ? '<span class="error-rate">' + formatNumber(t.error_count) + '</span>' : '0'}</td>
@@ -611,6 +620,18 @@
     </table></div>`;
       } catch (err) {
         console.error('Erişim anahtarı listesi yüklenemedi:', err);
+      }
+    }
+
+    async function editToken(id, field, current) {
+      const prompts = { label: 'Yeni etiket:', token: 'Yeni token:' };
+      const value = prompt(prompts[field], current);
+      if (value === null || value.trim() === current) return;
+      try {
+        await apiFetch('/tokens/' + id, { method: 'PATCH', body: JSON.stringify({ [field]: value.trim() }) });
+        await refresh();
+      } catch (err) {
+        alert('Hata: ' + err.message);
       }
     }
 

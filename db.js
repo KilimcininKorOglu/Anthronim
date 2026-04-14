@@ -44,6 +44,9 @@ let stmtActiveTokens;
 let stmtIncrementTokenRequest;
 let stmtIncrementTokenError;
 let stmtSetPlaintext;
+let stmtUpdateTokenLabel;
+let stmtUpdateTokenFull;
+let stmtUpdateTokenValue;
 
 // Prepared statement cache — Logging & stats
 let stmtInsertLog;
@@ -147,14 +150,17 @@ export function initDb() {
 
   // Migrate plaintext tokens to SHA-256 hashes
   const tokenRows = db.prepare('SELECT id, token FROM auth_tokens').all();
-  const updateToken = db.prepare('UPDATE auth_tokens SET token = ? WHERE id = ?');
+  const migrateToken = db.prepare('UPDATE auth_tokens SET token = ? WHERE id = ?');
   for (const row of tokenRows) {
     if (row.token.length !== 64 || !/^[a-f0-9]{64}$/.test(row.token)) {
-      updateToken.run(hashToken(row.token), row.id);
+      migrateToken.run(hashToken(row.token), row.id);
     }
   }
 
   stmtSetPlaintext = db.prepare('UPDATE auth_tokens SET plaintext = ? WHERE id = ?');
+  stmtUpdateTokenLabel = db.prepare('UPDATE auth_tokens SET label = ? WHERE id = ?');
+  stmtUpdateTokenFull = db.prepare('UPDATE auth_tokens SET token = ?, plaintext = ?, label = ? WHERE id = ?');
+  stmtUpdateTokenValue = db.prepare('UPDATE auth_tokens SET token = ?, plaintext = ? WHERE id = ?');
   stmtCleanupLogs = db.prepare("DELETE FROM request_log WHERE created_at < datetime('now', '-' || ? || ' days')");
   stmtModelStats = db.prepare('SELECT model, COUNT(*) AS count FROM request_log GROUP BY model ORDER BY count DESC LIMIT 10');
   stmtTokenStats = db.prepare('SELECT id, label, request_count, error_count, last_used_at, is_active FROM auth_tokens ORDER BY request_count DESC');
@@ -268,6 +274,24 @@ export function toggleToken(id, isActive) {
   const result = stmtToggleToken.run(isActive ? 1 : 0, id);
   invalidateTokenCache();
   return result.changes > 0;
+}
+
+export function updateToken(id, { label, token } = {}) {
+  if (token && typeof label === 'string') {
+    const result = stmtUpdateTokenFull.run(hashToken(token), token, label, id);
+    invalidateTokenCache();
+    return result.changes > 0;
+  }
+  if (token) {
+    const result = stmtUpdateTokenValue.run(hashToken(token), token, id);
+    invalidateTokenCache();
+    return result.changes > 0;
+  }
+  if (typeof label === 'string') {
+    const result = stmtUpdateTokenLabel.run(label, id);
+    return result.changes > 0;
+  }
+  return false;
 }
 
 export function listTokens() {

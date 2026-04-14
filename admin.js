@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, listTokens } from './db.js';
+import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, updateToken, listTokens } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -257,7 +257,7 @@ export async function handleAdmin(req, res, pathname) {
   if (pathname === '/admin/api/tokens' && req.method === 'GET') {
     const tokens = listTokens().map(t => ({
       ...t,
-      token: t.plaintext ? maskKey(t.plaintext) : t.token.slice(0, 12) + '...',
+      token: t.plaintext || t.token.slice(0, 12) + '...',
       plaintext: undefined,
     }));
     sendJson(res, 200, tokens);
@@ -309,8 +309,17 @@ export async function handleAdmin(req, res, pathname) {
       return;
     }
     const body = await readJsonBody(req);
+    // Token and/or label update
+    if (typeof body.label === 'string' || typeof body.token === 'string') {
+      const updated = updateToken(id, {
+        label: typeof body.label === 'string' ? body.label.trim() : undefined,
+        token: typeof body.token === 'string' ? body.token.trim() : undefined,
+      });
+      sendJson(res, updated ? 200 : 404, updated ? { ok: true } : { error: 'Erişim anahtarı bulunamadı' });
+      return;
+    }
     if (typeof body.isActive !== 'boolean') {
-      sendJson(res, 400, { error: 'isActive (boolean) alanı zorunlu' });
+      sendJson(res, 400, { error: 'isActive, label veya token alanı zorunlu' });
       return;
     }
     if (!body.isActive) {
