@@ -257,7 +257,8 @@ export async function handleAdmin(req, res, pathname) {
   if (pathname === '/admin/api/tokens' && req.method === 'GET') {
     const tokens = listTokens().map(t => ({
       ...t,
-      token: maskKey(t.token),
+      token: t.plaintext ? maskKey(t.plaintext) : t.token.slice(0, 12) + '...',
+      plaintext: undefined,
     }));
     sendJson(res, 200, tokens);
     return;

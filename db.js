@@ -43,6 +43,7 @@ let stmtListTokens;
 let stmtActiveTokens;
 let stmtIncrementTokenRequest;
 let stmtIncrementTokenError;
+let stmtSetPlaintext;
 
 // Prepared statement cache — Logging & stats
 let stmtInsertLog;
@@ -101,6 +102,9 @@ export function initDb() {
   try {
     db.exec('ALTER TABLE request_log ADD COLUMN error_detail TEXT');
   } catch (e) { /* column already exists */ }
+  try {
+    db.exec('ALTER TABLE auth_tokens ADD COLUMN plaintext TEXT');
+  } catch (e) { /* column already exists */ }
   db.exec('CREATE INDEX IF NOT EXISTS idx_request_log_auth_token_id ON request_log(auth_token_id)');
 
   // API key statements
@@ -117,7 +121,7 @@ export function initDb() {
   stmtDeleteToken = db.prepare('DELETE FROM auth_tokens WHERE id = ?');
   stmtToggleToken = db.prepare('UPDATE auth_tokens SET is_active = ? WHERE id = ?');
   stmtListTokens = db.prepare('SELECT * FROM auth_tokens ORDER BY id');
-  stmtActiveTokens = db.prepare('SELECT id, token FROM auth_tokens WHERE is_active = 1');
+  stmtActiveTokens = db.prepare('SELECT id, token, plaintext FROM auth_tokens WHERE is_active = 1');
   stmtIncrementTokenRequest = db.prepare("UPDATE auth_tokens SET request_count = request_count + 1, last_used_at = datetime('now') WHERE id = ?");
   stmtIncrementTokenError = db.prepare('UPDATE auth_tokens SET error_count = error_count + 1 WHERE id = ?');
 
@@ -150,6 +154,7 @@ export function initDb() {
     }
   }
 
+  stmtSetPlaintext = db.prepare('UPDATE auth_tokens SET plaintext = ? WHERE id = ?');
   stmtCleanupLogs = db.prepare("DELETE FROM request_log WHERE created_at < datetime('now', '-' || ? || ' days')");
   stmtModelStats = db.prepare('SELECT model, COUNT(*) AS count FROM request_log GROUP BY model ORDER BY count DESC LIMIT 10');
   stmtTokenStats = db.prepare('SELECT id, label, request_count, error_count, last_used_at, is_active FROM auth_tokens ORDER BY request_count DESC');
@@ -178,7 +183,7 @@ function loadActiveTokens() {
   if (!cachedTokens) {
     cachedTokens = new Map();
     for (const row of stmtActiveTokens.all()) {
-      cachedTokens.set(row.token, row.id);
+      cachedTokens.set(row.token, { id: row.id, hasPlaintext: !!row.plaintext });
     }
   }
   return cachedTokens;
@@ -232,7 +237,13 @@ export function validateToken(token, envFallback) {
   const map = loadActiveTokens();
   const hashed = hashToken(token);
   if (map.has(hashed)) {
-    return { id: map.get(hashed), valid: true };
+    const entry = map.get(hashed);
+    // Lazy migration: store plaintext on first successful auth
+    if (!entry.hasPlaintext) {
+      stmtSetPlaintext.run(token, entry.id);
+      entry.hasPlaintext = true;
+    }
+    return { id: entry.id, valid: true };
   }
   if (envFallback && safeEqual(token, envFallback)) {
     return { id: null, valid: true };
@@ -242,6 +253,7 @@ export function validateToken(token, envFallback) {
 
 export function addToken(token, label = '') {
   const result = stmtInsertToken.run(hashToken(token), label);
+  stmtSetPlaintext.run(token, result.lastInsertRowid);
   invalidateTokenCache();
   return result.lastInsertRowid;
 }
