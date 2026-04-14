@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.2] - 2026-04-14
+
+### Added
+- Public stats endpoint (`/stats`) with total requests, today count, active users, hourly chart, and model usage
+- Landing page statistics section with bar chart and top model ranking
+- Token editing via PATCH endpoint (label and token value)
+- Full plaintext token display in admin UI with click-to-edit
+- Plaintext column for lazy hash-to-plaintext token migration
+- Key and token labels in logs table instead of numeric IDs
+- Map upstream context limit errors to Anthropic `invalid_request_error`
+
+### Fixed
+- Remove brute-force protection from proxy auth gate to prevent API client lockout
+
 ## [1.3.1] - 2026-04-14
 
 ### Changed
