@@ -253,8 +253,8 @@
           <th>Tarih</th>
           <th>Model</th>
           <th>Status</th>
-          <th>Key ID</th>
-          <th>Token ID</th>
+          <th>API Anahtarı</th>
+          <th>Erişim Anahtarı</th>
           <th>Detay</th>
         </tr>
       </thead>
@@ -334,8 +334,8 @@
               <td>${formatDate(l.created_at)}</td>
               <td>${escHtml(l.model || '-')}</td>
               <td class="${statusClass(l.status_code)}">${l.status_code}</td>
-              <td>${l.api_key_id ?? '-'}</td>
-              <td>${l.auth_token_id ?? '-'}</td>
+              <td>${escHtml(l.key_label || '-')}</td>
+              <td>${escHtml(l.token_label || '-')}</td>
               <td>${detailPreview}</td>
             </tr>`;
           }).join('');
