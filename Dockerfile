@@ -11,7 +11,9 @@ RUN npm ci --omit=dev
 # --- Runtime stage: lean image ---
 FROM node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl tzdata
+
+ENV TZ=Europe/Istanbul
 
 WORKDIR /app
 

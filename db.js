@@ -133,14 +133,14 @@ export function initDb() {
   stmtGetStats = db.prepare(`
     SELECT
       (SELECT COUNT(*) FROM request_log) AS total_requests,
-      (SELECT COUNT(*) FROM request_log WHERE created_at >= datetime('now', '-1 day')) AS today_requests,
+      (SELECT COUNT(*) FROM request_log WHERE created_at >= datetime('now', 'localtime', 'start of day', 'utc')) AS today_requests,
       (SELECT COUNT(*) FROM api_keys WHERE is_active = 1) AS active_keys,
       (SELECT COUNT(*) FROM auth_tokens WHERE is_active = 1) AS active_tokens,
       (SELECT COUNT(*) FROM request_log WHERE status_code >= 400) AS error_requests
   `);
   stmtGetHourlyStats = db.prepare(`
     SELECT
-      strftime('%Y-%m-%dT%H:00:00Z', created_at) AS hour,
+      strftime('%Y-%m-%dT%H:00:00', created_at, 'localtime') AS hour,
       COUNT(*) AS count
     FROM request_log
     WHERE created_at >= datetime('now', '-24 hours')
