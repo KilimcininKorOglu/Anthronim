@@ -1,7 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats } from './db.js';
-import { handleAdmin } from './admin.js';
+import { handleAdmin, ADMIN_PATH } from './admin.js';
 
 loadDotEnv();
 initDb();
@@ -47,7 +47,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     const pathname = q === -1 ? rawUrl : rawUrl.slice(0, q);
 
     if (req.method === 'OPTIONS') {
-      if (rawUrl.startsWith('/admin')) {
+      if (rawUrl.startsWith(ADMIN_PATH)) {
         res.writeHead(204);
       } else {
         res.writeHead(204, PREFLIGHT_HEADERS);
@@ -86,7 +86,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       return;
     }
 
-    if (pathname.startsWith('/admin')) {
+    if (pathname.startsWith(ADMIN_PATH)) {
       await handleAdmin(req, res, pathname);
       return;
     }

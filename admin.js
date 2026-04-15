@@ -11,6 +11,9 @@ const ADMIN_PASS = process.env.ADMIN_PASS;
 const AUTH_TOKEN_ENV = process.env.AUTH_TOKEN;
 const adminEnabled = !!(ADMIN_USER && ADMIN_PASS);
 
+const rawAdminPath = process.env.ADMIN_PATH || '/admin';
+export const ADMIN_PATH = (rawAdminPath.startsWith('/') ? rawAdminPath : '/' + rawAdminPath).replace(/\/+$/, '');
+
 const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
 const NVIDIA_MODELS_URL = (process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1') + '/models';
 const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
@@ -33,14 +36,16 @@ let cachedLogsHtml = null;
 
 function loadHtml() {
   if (!cachedHtml) {
-    cachedHtml = fs.readFileSync(join(__dirname, 'admin.html'), 'utf8');
+    const raw = fs.readFileSync(join(__dirname, 'admin.html'), 'utf8');
+    cachedHtml = ADMIN_PATH === '/admin' ? raw : raw.replaceAll('/admin', ADMIN_PATH);
   }
   return cachedHtml;
 }
 
 function loadLogsHtml() {
   if (!cachedLogsHtml) {
-    cachedLogsHtml = fs.readFileSync(join(__dirname, 'logs.html'), 'utf8');
+    const raw = fs.readFileSync(join(__dirname, 'logs.html'), 'utf8');
+    cachedLogsHtml = ADMIN_PATH === '/admin' ? raw : raw.replaceAll('/admin', ADMIN_PATH);
   }
   return cachedLogsHtml;
 }
@@ -145,8 +150,10 @@ export async function handleAdmin(req, res, pathname) {
 
   if (!requireAuth(req, res)) return;
 
+  const sub = pathname.slice(ADMIN_PATH.length);
+
   // GET /admin — Dashboard HTML
-  if (pathname === '/admin' && req.method === 'GET') {
+  if (sub === '' && req.method === 'GET') {
     const html = loadHtml();
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" });
     res.end(html);
@@ -154,7 +161,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // GET /admin/logs — Logs HTML
-  if (pathname === '/admin/logs' && req.method === 'GET') {
+  if (sub === '/logs' && req.method === 'GET') {
     const html = loadLogsHtml();
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" });
     res.end(html);
@@ -162,13 +169,13 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // GET /admin/api/stats
-  if (pathname === '/admin/api/stats' && req.method === 'GET') {
+  if (sub === '/api/stats' && req.method === 'GET') {
     sendJson(res, 200, getStats());
     return;
   }
 
   // GET /admin/api/logs
-  if (pathname === '/admin/api/logs' && req.method === 'GET') {
+  if (sub === '/api/logs' && req.method === 'GET') {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '100', 10), 500);
     const offset = Math.max(parseInt(url.searchParams.get('offset') || '0', 10), 0);
@@ -179,7 +186,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // GET /admin/api/models
-  if (pathname === '/admin/api/models' && req.method === 'GET') {
+  if (sub === '/api/models' && req.method === 'GET') {
     const now = Date.now();
     if (!modelCache || (now - modelCacheTime) >= MODEL_CACHE_TTL) {
       try {
@@ -195,7 +202,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // GET /admin/api/keys
-  if (pathname === '/admin/api/keys' && req.method === 'GET') {
+  if (sub === '/api/keys' && req.method === 'GET') {
     const keys = listKeys().map(k => ({
       ...k,
       key: maskKey(k.key),
@@ -205,7 +212,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // POST /admin/api/keys
-  if (pathname === '/admin/api/keys' && req.method === 'POST') {
+  if (sub === '/api/keys' && req.method === 'POST') {
     try {
       const body = await readJsonBody(req);
       if (!body.key || typeof body.key !== 'string') {
@@ -225,7 +232,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // DELETE /admin/api/keys/:id
-  if (pathname.startsWith('/admin/api/keys/') && req.method === 'DELETE') {
+  if (sub.startsWith('/api/keys/') && req.method === 'DELETE') {
     const id = extractIdFromPath(pathname);
     if (isNaN(id)) {
       sendJson(res, 400, { error: 'Geçersiz ID' });
@@ -237,7 +244,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // PATCH /admin/api/keys/:id
-  if (pathname.startsWith('/admin/api/keys/') && req.method === 'PATCH') {
+  if (sub.startsWith('/api/keys/') && req.method === 'PATCH') {
     const id = extractIdFromPath(pathname);
     if (isNaN(id)) {
       sendJson(res, 400, { error: 'Geçersiz ID' });
@@ -254,7 +261,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // GET /admin/api/tokens
-  if (pathname === '/admin/api/tokens' && req.method === 'GET') {
+  if (sub === '/api/tokens' && req.method === 'GET') {
     const tokens = listTokens().map(t => ({
       ...t,
       token: t.plaintext || t.token.slice(0, 12) + '...',
@@ -265,7 +272,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // POST /admin/api/tokens
-  if (pathname === '/admin/api/tokens' && req.method === 'POST') {
+  if (sub === '/api/tokens' && req.method === 'POST') {
     try {
       const body = await readJsonBody(req);
       if (!body.token || typeof body.token !== 'string') {
@@ -285,7 +292,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // DELETE /admin/api/tokens/:id
-  if (pathname.startsWith('/admin/api/tokens/') && req.method === 'DELETE') {
+  if (sub.startsWith('/api/tokens/') && req.method === 'DELETE') {
     const id = extractIdFromPath(pathname);
     if (isNaN(id)) {
       sendJson(res, 400, { error: 'Geçersiz ID' });
@@ -302,7 +309,7 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   // PATCH /admin/api/tokens/:id
-  if (pathname.startsWith('/admin/api/tokens/') && req.method === 'PATCH') {
+  if (sub.startsWith('/api/tokens/') && req.method === 'PATCH') {
     const id = extractIdFromPath(pathname);
     if (isNaN(id)) {
       sendJson(res, 400, { error: 'Geçersiz ID' });
