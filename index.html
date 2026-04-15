@@ -399,7 +399,12 @@
               <thead><tr><th>Model</th><th>Kısa TTFB</th><th>Kısa Toplam</th><th>Uzun TTFB</th><th>Uzun Toplam</th></tr></thead>
               <tbody>${benchRows}</tbody>
             </table></div>
-            <p class="config-note">Her saat başı güncellenir. TTFB = ilk yanıt süresi, Toplam = tam yanıt süresi.</p>`;
+            <p class="config-note">Her saat başı güncellenir. TTFB = ilk yanıt süresi, Toplam = tam yanıt süresi.</p>
+            <p class="config-note" style="margin-top:8px"><strong>Metodoloji:</strong> Her model için iki ayrı streaming istek gönderilir.
+              Kısa prompt: tek kelimelik yanıt (max 100 token).
+              Uzun prompt: Python binary search tree implementasyonu (max 2048 token).
+              TTFB, sunucudan gelen ilk byte'ın alınma süresini; Toplam ise yanıtın tamamen tamamlanma süresini ölçer.
+              Ölçümler NVIDIA NIM API üzerinden yapılır, proxy overhead dahildir.</p>`;
         } else {
           benchContainer.innerHTML = '<div class="empty">Benchmark verisi henüz yok</div>';
         }
