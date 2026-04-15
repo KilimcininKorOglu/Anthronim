@@ -129,6 +129,7 @@ Oturum içinde model geçişi `/model opus`, `/model sonnet` veya `/model haiku`
 | `HOST`                     | Hayır   | `0.0.0.0`                             | HTTP sunucusunun bağlanacağı arayüz                             |
 | `ADMIN_USER`               | Hayır   | —                                     | Yönetim paneli kullanıcı adı (`ADMIN_PASS` ile birlikte)        |
 | `ADMIN_PASS`               | Hayır   | —                                     | Yönetim paneli şifresi (`ADMIN_USER` ile birlikte)              |
+| `ADMIN_PATH`               | Hayır   | `/admin`                              | Yönetim paneli URL yolu (tüm admin endpoint'leri bu yol altında) |
 | `DB_PATH`                  | Hayır   | `./anthronim.db`                      | SQLite dosya yolu (Docker'da `/app/data/anthronim.db`)          |
 | `MODEL_CACHE_TTL`          | Hayır   | `3600000` (1 sa)                      | NVIDIA model listesi önbellek süresi (ms)                       |
 | `TRUST_PROXY`              | Hayır   | `false`                               | Reverse proxy arkasındaysa `true` yapın (XFF güven)             |
