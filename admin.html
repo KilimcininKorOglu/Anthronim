@@ -59,6 +59,18 @@
       letter-spacing: 2px;
     }
 
+    .header-nav {
+      display: flex;
+      gap: 16px;
+    }
+
+    .header-nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
     .header-meta {
       font-size: 11px;
       color: var(--text-muted);
@@ -351,8 +363,10 @@
 
   <div class="header">
     <h1>Anthronim // Yönetim</h1>
-    <div style="display:flex;gap:16px"><a href="/admin/logs"
-        style="color:var(--text-dim);text-decoration:none;font-size:12px;letter-spacing:1px">Loglar</a></div>
+    <div class="header-nav">
+      <a href="/">Ana Sayfa</a>
+      <a href="/admin/logs">Loglar</a>
+    </div>
   </div>
 
   <div class="stats-grid">
