@@ -278,7 +278,11 @@
 
   <div class="section">
     <div class="section-header">Claude Code Yapılandırması</div>
-    <p class="config-note"><code>~/.claude/settings.json</code> dosyasına ekleyin:</p>
+    <p class="config-note" style="margin-bottom:12px">Tek komutla yapılandırın (önerilen):</p>
+    <pre><code>npx runcodingplan --add-custom --name "Anthronim" --url "<span id="baseUrlRcp"></span>" -a &lt;erişim anahtarınız&gt;</code></pre>
+    <p class="config-note" style="margin-top:4px">Ardından <code>npx runcodingplan -p anthronim</code> ile Claude Code'u başlatın.
+      Detaylar: <a href="https://github.com/ersinkoc/RunCodingPlan" target="_blank" rel="noopener">github.com/ersinkoc/RunCodingPlan</a></p>
+    <p class="config-note" style="margin-top:16px;margin-bottom:12px">Alternatif olarak <code>~/.claude/settings.json</code> dosyasını düzenleyin:</p>
     <pre><code>{
   "env": {
     "ANTHROPIC_BASE_URL": "<span id="baseUrl"></span>",
@@ -414,6 +418,7 @@
     }
 
     document.getElementById('baseUrl').textContent = location.origin;
+    document.getElementById('baseUrlRcp').textContent = location.origin;
     loadStats();
     loadModels();
   </script>
