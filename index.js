@@ -339,6 +339,11 @@ async function handleMessages(req, res, authTokenId) {
       sendJson(res, 400, { error: { type: 'invalid_request_error', message: msg } });
       return;
     }
+    // Model not found on NVIDIA
+    if (upstream.status === 404) {
+      sendJson(res, 404, { error: { type: 'not_found', message: `${body.model} NVIDIA sisteminde bulunmamaktadır` } });
+      return;
+    }
     sendJson(res, upstream.status, { error: { type: 'api_error', message: 'Upstream API hatası' } });
     return;
   }
