@@ -280,9 +280,11 @@
     <div class="section-header">Claude Code Yapılandırması</div>
     <p class="config-note" style="margin-bottom:12px">Tek komutla yapılandırın (önerilen):</p>
     <pre><code>npx runcodingplan --add-custom --name "Anthronim" --url "<span id="baseUrlRcp"></span>" -a &lt;erişim anahtarınız&gt; -m minimaxai/minimax-m2.5</code></pre>
-    <p class="config-note" style="margin-top:4px">Ardından <code>npx runcodingplan -p anthronim</code> ile Claude Code'u başlatın.
-      Diğer modelleri eklemek için: <code>npx runcodingplan -p anthronim --add-model minimaxai/minimax-m2.7</code>
-      Detaylar: <a href="https://github.com/ersinkoc/RunCodingPlan" target="_blank" rel="noopener">github.com/ersinkoc/RunCodingPlan</a></p>
+    <p class="config-note" style="margin-top:8px">Başlatmak için:</p>
+    <pre><code>npx runcodingplan -p anthronim</code></pre>
+    <p class="config-note" style="margin-top:8px">Diğer modelleri eklemek için:</p>
+    <pre><code>npx runcodingplan -p anthronim --add-model minimaxai/minimax-m2.7</code></pre>
+    <p class="config-note" style="margin-top:4px">Detaylar: <a href="https://github.com/ersinkoc/RunCodingPlan" target="_blank" rel="noopener">github.com/ersinkoc/RunCodingPlan</a></p>
     <p class="config-note" style="margin-top:16px;margin-bottom:12px">Alternatif olarak <code>~/.claude/settings.json</code> dosyasını düzenleyin:</p>
     <pre><code>{
   "env": {
