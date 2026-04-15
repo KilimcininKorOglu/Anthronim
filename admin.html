@@ -706,8 +706,11 @@
         container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Model</th><th>Durum</th><th></th></tr></thead><tbody>' +
           models.map(m => `<tr>
             <td class="key-cell">${escHtml(m.model)}</td>
-            <td><button onclick="toggleBenchmark(${m.id},${!m.is_active})" class="btn-sm ${m.is_active ? 'btn-danger' : 'btn-primary'}">${m.is_active ? 'Devre Dışı' : 'Etkinleştir'}</button></td>
-            <td><button onclick="deleteBenchmark(${m.id})" class="btn-sm btn-danger">Sil</button></td>
+            <td><span class="badge ${m.is_active ? 'badge-active' : 'badge-inactive'}">${m.is_active ? 'Aktif' : 'Pasif'}</span></td>
+            <td class="actions">
+              <button class="btn-sm ${m.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleBenchmark(${m.id},${!m.is_active})">${m.is_active ? 'Devre Dışı' : 'Etkinleştir'}</button>
+              <button class="btn-sm btn-danger" onclick="deleteBenchmark(${m.id})">Sil</button>
+            </td>
           </tr>`).join('') +
           '</tbody></table></div>';
       } catch (err) {
