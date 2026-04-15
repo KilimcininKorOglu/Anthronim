@@ -224,7 +224,7 @@ async function runSingleBench(model, prompt, maxTokens) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keyEntry.key}` },
       body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, stream: true }),
-      signal: AbortSignal.timeout(600000),
+      signal: AbortSignal.timeout(300000),
     });
 
     if (!res.ok) return { ttfb: null, total: null, error: `http_${res.status}` };
