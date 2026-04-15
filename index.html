@@ -270,6 +270,13 @@
   </div>
 
   <div class="section">
+    <div class="section-header">Model Yanıt Süreleri</div>
+    <div id="benchmarkResults">
+      <div class="empty">Yükleniyor...</div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-header">Claude Code Yapılandırması</div>
     <p class="config-note"><code>~/.claude/settings.json</code> dosyasına ekleyin:</p>
     <pre><code>{
@@ -377,6 +384,25 @@
               <thead><tr><th>En Çok Kullanılan Modeller</th><th>İstek</th></tr></thead>
               <tbody>${topModels}</tbody>
             </table></div>` : ''}`;
+        const benchmarks = (s.benchmarks || []).filter(b => !b.error);
+        const benchContainer = document.getElementById('benchmarkResults');
+        if (benchmarks.length > 0) {
+          const benchRows = benchmarks.map(b => `<tr>
+            <td>${escHtml(b.model)}</td>
+            <td>${b.short_ttfb != null ? b.short_ttfb.toFixed(1) + 's' : '-'}</td>
+            <td>${b.short_total != null ? b.short_total.toFixed(1) + 's' : '-'}</td>
+            <td>${b.long_ttfb != null ? b.long_ttfb.toFixed(1) + 's' : '-'}</td>
+            <td>${b.long_total != null ? b.long_total.toFixed(1) + 's' : '-'}</td>
+          </tr>`).join('');
+          benchContainer.innerHTML = `
+            <div class="table-wrap"><table>
+              <thead><tr><th>Model</th><th>Kısa TTFB</th><th>Kısa Toplam</th><th>Uzun TTFB</th><th>Uzun Toplam</th></tr></thead>
+              <tbody>${benchRows}</tbody>
+            </table></div>
+            <p class="config-note">Her saat başı güncellenir. TTFB = ilk yanıt süresi, Toplam = tam yanıt süresi.</p>`;
+        } else {
+          benchContainer.innerHTML = '<div class="empty">Benchmark verisi henüz yok</div>';
+        }
       } catch (err) {
         document.getElementById('statsContainer').innerHTML = '<div class="empty">İstatistikler yüklenemedi</div>';
       }

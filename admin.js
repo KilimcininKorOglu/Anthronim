@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, updateToken, listTokens } from './db.js';
+import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, updateToken, listTokens, listBenchmarkModels, addBenchmarkModel, removeBenchmarkModel, toggleBenchmarkModel } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -338,6 +338,53 @@ export async function handleAdmin(req, res, pathname) {
     }
     const toggled = toggleToken(id, body.isActive);
     sendJson(res, toggled ? 200 : 404, toggled ? { ok: true } : { error: 'Erişim anahtarı bulunamadı' });
+    return;
+  }
+
+  // GET /admin/api/benchmarks
+  if (sub === '/api/benchmarks' && req.method === 'GET') {
+    sendJson(res, 200, listBenchmarkModels());
+    return;
+  }
+
+  // POST /admin/api/benchmarks
+  if (sub === '/api/benchmarks' && req.method === 'POST') {
+    const body = await readJsonBody(req);
+    if (!body.model || typeof body.model !== 'string') {
+      sendJson(res, 400, { error: 'model alanı zorunlu' });
+      return;
+    }
+    addBenchmarkModel(body.model.trim());
+    sendJson(res, 201, { ok: true });
+    return;
+  }
+
+  // DELETE /admin/api/benchmarks/:id
+  if (sub.startsWith('/api/benchmarks/') && req.method === 'DELETE') {
+    const id = extractIdFromPath(pathname);
+    if (isNaN(id)) {
+      sendJson(res, 400, { error: 'Geçersiz ID' });
+      return;
+    }
+    const removed = removeBenchmarkModel(id);
+    sendJson(res, removed ? 200 : 404, removed ? { ok: true } : { error: 'Bulunamadı' });
+    return;
+  }
+
+  // PATCH /admin/api/benchmarks/:id
+  if (sub.startsWith('/api/benchmarks/') && req.method === 'PATCH') {
+    const id = extractIdFromPath(pathname);
+    if (isNaN(id)) {
+      sendJson(res, 400, { error: 'Geçersiz ID' });
+      return;
+    }
+    const body = await readJsonBody(req);
+    if (typeof body.isActive !== 'boolean') {
+      sendJson(res, 400, { error: 'isActive alanı zorunlu' });
+      return;
+    }
+    const toggled = toggleBenchmarkModel(id, body.isActive);
+    sendJson(res, toggled ? 200 : 404, toggled ? { ok: true } : { error: 'Bulunamadı' });
     return;
   }
 

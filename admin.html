@@ -432,6 +432,18 @@
   </div>
 
   <div class="section">
+    <div class="section-header">Benchmark Modelleri</div>
+    <form class="add-form" id="addBenchmarkForm">
+      <input type="text" name="model" placeholder="model-adi (ör: minimaxai/minimax-m2.5)" required
+        style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:inherit;font-size:12px">
+      <button type="submit">Ekle</button>
+    </form>
+    <div id="benchmarkModels">
+      <div class="empty">Yükleniyor...</div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-header">Kullanılabilir Modeller (NVIDIA NIM)</div>
     <div id="modelList">
       <div class="empty">Yükleniyor...</div>
@@ -684,6 +696,50 @@
       }
     });
 
+    async function loadBenchmarks() {
+      try {
+        const models = await apiFetch('/benchmarks');
+        const container = document.getElementById('benchmarkModels');
+        if (models.length === 0) {
+          container.innerHTML = '<div class="empty">Benchmark modeli eklenmemiş</div>';
+          return;
+        }
+        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Model</th><th>Durum</th><th></th></tr></thead><tbody>' +
+          models.map(m => `<tr>
+            <td class="key-cell">${escHtml(m.model)}</td>
+            <td><button onclick="toggleBenchmark(${m.id},${!m.is_active})" class="toggle-btn ${m.is_active ? 'active' : ''}">${m.is_active ? 'Aktif' : 'Pasif'}</button></td>
+            <td><button onclick="deleteBenchmark(${m.id})" class="delete-btn">Sil</button></td>
+          </tr>`).join('') +
+          '</tbody></table></div>';
+      } catch (err) {
+        console.error('Benchmark listesi yüklenemedi:', err);
+      }
+    }
+
+    async function toggleBenchmark(id, isActive) {
+      await apiFetch('/benchmarks/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+      await refresh();
+    }
+
+    async function deleteBenchmark(id) {
+      if (!confirm('Bu modeli benchmark listesinden silmek istediğinizden emin misiniz?')) return;
+      await apiFetch('/benchmarks/' + id, { method: 'DELETE' });
+      await refresh();
+    }
+
+    document.getElementById('addBenchmarkForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const model = e.target.model.value.trim();
+      if (!model) return;
+      try {
+        await apiFetch('/benchmarks', { method: 'POST', body: JSON.stringify({ model }) });
+        e.target.reset();
+        await refresh();
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    });
+
     let cachedModelList = null;
 
     async function loadModels() {
@@ -720,7 +776,7 @@
     }
 
     async function refresh() {
-      await Promise.all([loadStats(), loadKeys(), loadTokens(), loadModels()]);
+      await Promise.all([loadStats(), loadKeys(), loadTokens(), loadBenchmarks(), loadModels()]);
     }
 
     refresh();

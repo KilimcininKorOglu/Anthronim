@@ -1,6 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats } from './db.js';
+import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats, listBenchmarkModels, upsertBenchmark } from './db.js';
 import { handleAdmin, ADMIN_PATH } from './admin.js';
 
 loadDotEnv();
@@ -9,6 +9,9 @@ cleanupOldLogs();
 setInterval(cleanupOldLogs, parseInt(process.env.LOG_CLEANUP_HOURS || '6', 10) * 60 * 60 * 1000);
 
 const API_BASE = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
+const BENCH_SHORT_PROMPT = 'Say hi in one word.';
+const BENCH_LONG_PROMPT = 'Write a Python binary search tree implementation with insert, delete, search, and traversal. Include docstrings.';
+const BENCH_INTERVAL = parseInt(process.env.BENCH_INTERVAL_MINUTES || '60', 10) * 60 * 1000;
 const indexHtml = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -206,6 +209,60 @@ function sanitizeErrorBody(raw) {
     return raw.slice(0, 256);
   }
 }
+
+// --- Benchmark runner ---
+
+async function runSingleBench(model, prompt, maxTokens) {
+  const keyEntry = getNextKey(NVIDIA_API_KEY);
+  if (!keyEntry) return { ttfb: null, total: null, error: 'no_key' };
+
+  const start = performance.now();
+  let ttfb = null;
+
+  try {
+    const res = await fetch(`${API_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keyEntry.key}` },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, stream: true }),
+      signal: AbortSignal.timeout(300000),
+    });
+
+    if (!res.ok) return { ttfb: null, total: null, error: `http_${res.status}` };
+
+    const reader = res.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (ttfb === null) ttfb = performance.now() - start;
+    }
+
+    const total = performance.now() - start;
+    return { ttfb: Math.round(ttfb) / 1000, total: Math.round(total) / 1000, error: null };
+  } catch (e) {
+    return { ttfb: null, total: null, error: e.message?.slice(0, 100) || 'unknown' };
+  }
+}
+
+async function runBenchmarks() {
+  const models = listBenchmarkModels().filter(m => m.is_active);
+  if (models.length === 0) return;
+
+  console.log(`Benchmark başlatılıyor (${models.length} model)...`);
+  for (const { model } of models) {
+    try {
+      const short = await runSingleBench(model, BENCH_SHORT_PROMPT, 100);
+      const long = await runSingleBench(model, BENCH_LONG_PROMPT, 2048);
+      const error = short.error || long.error || null;
+      upsertBenchmark(model, short.ttfb, short.total, long.ttfb, long.total, error);
+      console.log(`Benchmark: ${model} — kısa ${short.total}s, uzun ${long.total}s${error ? ' (' + error + ')' : ''}`);
+    } catch (e) {
+      upsertBenchmark(model, null, null, null, null, e.message?.slice(0, 100));
+    }
+  }
+}
+
+setTimeout(runBenchmarks, 30000);
+setInterval(runBenchmarks, BENCH_INTERVAL);
 
 function loadDotEnv() {
   try {

@@ -56,6 +56,14 @@ let stmtCleanupLogs;
 let stmtModelStats;
 let stmtTokenStats;
 
+// Prepared statement cache — Benchmarks
+let stmtListBenchmarkModels;
+let stmtAddBenchmarkModel;
+let stmtRemoveBenchmarkModel;
+let stmtToggleBenchmarkModel;
+let stmtUpsertBenchmark;
+let stmtGetBenchmarks;
+
 export function initDb() {
   db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
@@ -96,6 +104,25 @@ export function initDb() {
 
     CREATE INDEX IF NOT EXISTS idx_request_log_created_at ON request_log(created_at);
     CREATE INDEX IF NOT EXISTS idx_request_log_api_key_id ON request_log(api_key_id);
+
+    CREATE TABLE IF NOT EXISTS benchmark_config (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      model     TEXT NOT NULL UNIQUE,
+      is_active INTEGER DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS model_benchmarks (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      model      TEXT NOT NULL UNIQUE,
+      short_ttfb REAL,
+      short_total REAL,
+      long_ttfb  REAL,
+      long_total REAL,
+      error      TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_model_benchmarks_model ON model_benchmarks(model);
   `);
 
   // Idempotent column additions
@@ -164,6 +191,24 @@ export function initDb() {
   stmtCleanupLogs = db.prepare("DELETE FROM request_log WHERE created_at < datetime('now', '-' || ? || ' days')");
   stmtModelStats = db.prepare('SELECT model, COUNT(*) AS count FROM request_log WHERE status_code < 400 GROUP BY model ORDER BY count DESC LIMIT 10');
   stmtTokenStats = db.prepare('SELECT id, label, request_count, error_count, last_used_at, is_active FROM auth_tokens ORDER BY request_count DESC');
+
+  // Benchmark statements
+  stmtListBenchmarkModels = db.prepare('SELECT * FROM benchmark_config ORDER BY model');
+  stmtAddBenchmarkModel = db.prepare('INSERT OR IGNORE INTO benchmark_config (model) VALUES (?)');
+  stmtRemoveBenchmarkModel = db.prepare('DELETE FROM benchmark_config WHERE id = ?');
+  stmtToggleBenchmarkModel = db.prepare('UPDATE benchmark_config SET is_active = ? WHERE id = ?');
+  stmtUpsertBenchmark = db.prepare(`
+    INSERT INTO model_benchmarks (model, short_ttfb, short_total, long_ttfb, long_total, error)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(model) DO UPDATE SET
+      short_ttfb = excluded.short_ttfb,
+      short_total = excluded.short_total,
+      long_ttfb = excluded.long_ttfb,
+      long_total = excluded.long_total,
+      error = excluded.error,
+      created_at = datetime('now')
+  `);
+  stmtGetBenchmarks = db.prepare('SELECT model, short_ttfb, short_total, long_ttfb, long_total, error, created_at FROM model_benchmarks ORDER BY model');
 }
 
 // --- API Key cache ---
@@ -360,11 +405,40 @@ export function getPublicStats() {
   const hourly = stmtGetHourlyStats.all();
   const modelStats = stmtModelStats.all();
 
+  const benchmarks = stmtGetBenchmarks.all();
+
   return {
     totalRequests: summary.total_requests,
     todayRequests: summary.today_requests,
     activeUsers: summary.active_tokens,
     hourly,
     modelStats,
+    benchmarks,
   };
+}
+
+// --- Benchmark functions ---
+
+export function listBenchmarkModels() {
+  return stmtListBenchmarkModels.all();
+}
+
+export function addBenchmarkModel(model) {
+  return stmtAddBenchmarkModel.run(model);
+}
+
+export function removeBenchmarkModel(id) {
+  return stmtRemoveBenchmarkModel.run(id).changes > 0;
+}
+
+export function toggleBenchmarkModel(id, isActive) {
+  return stmtToggleBenchmarkModel.run(isActive ? 1 : 0, id).changes > 0;
+}
+
+export function upsertBenchmark(model, shortTtfb, shortTotal, longTtfb, longTotal, error) {
+  stmtUpsertBenchmark.run(model, shortTtfb, shortTotal, longTtfb, longTotal, error);
+}
+
+export function getBenchmarks() {
+  return stmtGetBenchmarks.all();
 }
