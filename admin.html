@@ -434,9 +434,8 @@
   <div class="section">
     <div class="section-header">Benchmark Modelleri</div>
     <form class="add-form" id="addBenchmarkForm">
-      <input type="text" name="model" placeholder="model-adi (ör: minimaxai/minimax-m2.5)" required
-        style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:inherit;font-size:12px">
-      <button type="submit">Ekle</button>
+      <input type="text" name="model" placeholder="model-adi (ör: minimaxai/minimax-m2.5)" required style="flex:1">
+      <button type="submit" class="btn-primary">Ekle</button>
     </form>
     <div id="benchmarkModels">
       <div class="empty">Yükleniyor...</div>
@@ -707,8 +706,8 @@
         container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Model</th><th>Durum</th><th></th></tr></thead><tbody>' +
           models.map(m => `<tr>
             <td class="key-cell">${escHtml(m.model)}</td>
-            <td><button onclick="toggleBenchmark(${m.id},${!m.is_active})" class="toggle-btn ${m.is_active ? 'active' : ''}">${m.is_active ? 'Aktif' : 'Pasif'}</button></td>
-            <td><button onclick="deleteBenchmark(${m.id})" class="delete-btn">Sil</button></td>
+            <td><button onclick="toggleBenchmark(${m.id},${!m.is_active})" class="btn-sm ${m.is_active ? 'btn-danger' : 'btn-primary'}">${m.is_active ? 'Devre Dışı' : 'Etkinleştir'}</button></td>
+            <td><button onclick="deleteBenchmark(${m.id})" class="btn-sm btn-danger">Sil</button></td>
           </tr>`).join('') +
           '</tbody></table></div>';
       } catch (err) {
