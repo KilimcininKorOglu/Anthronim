@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0] - 2026-04-15
+
+### Added
+- Configurable admin panel path via `ADMIN_PATH` environment variable
+- Timezone support for stats display (`TZ` env var, default `Europe/Istanbul`)
+- Descriptive error when model not found on NVIDIA (404 → model name in message)
+- Descriptive error for non-multimodal model image requests (400 → model name)
+
+### Fixed
+- SSE keepalive heartbeat prevents reverse proxy idle timeout on long requests
+- Server timeout configuration (`timeout=0`) for streaming and non-streaming
+
 ## [1.3.2] - 2026-04-14
 
 ### Added
