@@ -339,6 +339,11 @@ async function handleMessages(req, res, authTokenId) {
       sendJson(res, 400, { error: { type: 'invalid_request_error', message: msg } });
       return;
     }
+    // Non-multimodal model received image
+    if (upstream.status === 400 && lower.includes('not a multimodal model')) {
+      sendJson(res, 400, { error: { type: 'invalid_request_error', message: `${body.model} görsel desteklememektedir` } });
+      return;
+    }
     // Model not found on NVIDIA
     if (upstream.status === 404) {
       sendJson(res, 404, { error: { type: 'not_found', message: `${body.model} NVIDIA sisteminde bulunmamaktadır` } });
