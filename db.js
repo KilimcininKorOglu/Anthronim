@@ -162,7 +162,7 @@ export function initDb() {
   stmtUpdateTokenFull = db.prepare('UPDATE auth_tokens SET token = ?, plaintext = ?, label = ? WHERE id = ?');
   stmtUpdateTokenValue = db.prepare('UPDATE auth_tokens SET token = ?, plaintext = ? WHERE id = ?');
   stmtCleanupLogs = db.prepare("DELETE FROM request_log WHERE created_at < datetime('now', '-' || ? || ' days')");
-  stmtModelStats = db.prepare('SELECT model, COUNT(*) AS count FROM request_log GROUP BY model ORDER BY count DESC LIMIT 10');
+  stmtModelStats = db.prepare('SELECT model, COUNT(*) AS count FROM request_log WHERE status_code < 400 GROUP BY model ORDER BY count DESC LIMIT 10');
   stmtTokenStats = db.prepare('SELECT id, label, request_count, error_count, last_used_at, is_active FROM auth_tokens ORDER BY request_count DESC');
 }
 
