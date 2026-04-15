@@ -247,8 +247,8 @@ async function runBenchmarks() {
   const models = listBenchmarkModels().filter(m => m.is_active);
   if (models.length === 0) return;
 
-  console.log(`Benchmark başlatılıyor (${models.length} model)...`);
-  for (const { model } of models) {
+  console.log(`Benchmark başlatılıyor (${models.length} model, paralel)...`);
+  await Promise.allSettled(models.map(async ({ model }) => {
     try {
       const short = await runSingleBench(model, BENCH_SHORT_PROMPT, 100);
       const long = await runSingleBench(model, BENCH_LONG_PROMPT, 2048);
@@ -258,7 +258,7 @@ async function runBenchmarks() {
     } catch (e) {
       upsertBenchmark(model, null, null, null, null, e.message?.slice(0, 100));
     }
-  }
+  }));
 }
 
 setTimeout(runBenchmarks, 30000);
