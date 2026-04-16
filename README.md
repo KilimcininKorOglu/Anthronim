@@ -2,6 +2,8 @@
 
 NVIDIA NIM'in OpenAI uyumlu uç noktasını Anthropic Messages API olarak sunan bir Node.js proxy'sidir. Claude Code ve Anthropic formatını konuşan diğer istemciler, herhangi bir kod değişikliği olmadan NVIDIA tarafında barındırılan açık kaynak modelleri (Minimax, GLM, Llama, DeepSeek, Qwen vb.) bu sunucu üzerinden çağırabilir.
 
+Güncel sürüm: **1.4.0**. Sürüm geçmişi için [`CHANGELOG.md`](CHANGELOG.md) dosyasına bakın.
+
 ## Özellikler
 
 - Node.js 20+, tek dış bağımlılık (`better-sqlite3`), framework yok.
@@ -80,7 +82,26 @@ Hızlı sağlık kontrolü:
 
 ```bash
 curl http://localhost:8787/health
+# {"status":"ok"}
 ```
+
+### Hızlı Deneme
+
+`/v1/messages` uç noktasına örnek istek (akışsız):
+
+```bash
+curl -s http://localhost:8787/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: <erişim anahtarınız>" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "minimaxai/minimax-m2.5",
+    "max_tokens": 256,
+    "messages": [{ "role": "user", "content": "Merhaba, kendini tanıt." }]
+  }'
+```
+
+Akışlı (SSE) istek için istek gövdesine `"stream": true` ekleyin. Erişim anahtarı tanımlı değilse `x-api-key` başlığını atlayabilirsiniz.
 
 ### Docker ile Kurulum
 
@@ -230,6 +251,10 @@ Panel sunar:
 - NVIDIA model kataloğu
 
 Admin kimlik doğrulaması (Basic Auth), proxy erişim anahtarından bağımsızdır. HTTP Basic Auth base64 kodlaması kullanır; üretim ortamında TLS (reverse proxy) ardında çalıştırılması önerilir.
+
+## Sürüm Geçmişi
+
+Tüm değişiklikler [`CHANGELOG.md`](CHANGELOG.md) dosyasında tutulmaktadır.
 
 ## Lisans
 
