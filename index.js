@@ -199,6 +199,37 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+function buildContent(message) {
+  const content = [];
+  if (message.reasoning_content) {
+    content.push({ type: 'thinking', thinking: message.reasoning_content });
+  }
+  if (message.content) {
+    const text = message.content;
+    if (text.startsWith('<think>')) {
+      const endIdx = text.indexOf('</think>');
+      if (endIdx !== -1) {
+        const thinking = text.slice(7, endIdx);
+        const rest = text.slice(endIdx + 8).trim();
+        if (thinking) content.push({ type: 'thinking', thinking });
+        if (rest) content.push({ type: 'text', text: rest });
+      } else {
+        content.push({ type: 'thinking', thinking: text.slice(7) });
+      }
+    } else {
+      content.push({ type: 'text', text });
+    }
+  }
+  if (message.tool_calls?.length) {
+    for (const tc of message.tool_calls) {
+      let parsedInput;
+      try { parsedInput = JSON.parse(tc.function.arguments); } catch { parsedInput = {}; }
+      content.push({ type: 'tool_use', id: tc.id, name: tc.function.name, input: parsedInput });
+    }
+  }
+  return content;
+}
+
 function sanitizeErrorBody(raw) {
   try {
     const parsed = JSON.parse(raw);
@@ -406,6 +437,43 @@ async function handleMessages(req, res, authTokenId) {
       sendJson(res, 404, { error: { type: 'not_found', message: `${body.model} NVIDIA sisteminde bulunmamaktadır` } });
       return;
     }
+    // Rate limit → retry once with a different key, then overloaded_error
+    if (upstream.status === 429) {
+      const retryKey = getNextKey(NVIDIA_API_KEY);
+      if (retryKey && retryKey.key !== keyEntry.key) {
+        const retry = await fetch(`${API_BASE}/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${retryKey.key}` },
+          body: JSON.stringify(payload),
+        });
+        if (retry.ok) {
+          if (retryKey.id !== null || authTokenId !== null) {
+            logRequest(retryKey.id, body.model, !!body.stream, retry.status, authTokenId);
+          }
+          if (body.stream) { await handleStream(retry, body.model, res); return; }
+          const data = await retry.json();
+          const choice = data.choices[0];
+          const message = choice.message;
+          const content = buildContent(message);
+          let stopReason = 'end_turn';
+          if (choice.finish_reason === 'length') stopReason = 'max_tokens';
+          if (choice.finish_reason === 'tool_calls' || message.tool_calls?.length) stopReason = 'tool_use';
+          sendJson(res, 200, {
+            id: data.id, type: 'message', role: 'assistant',
+            content: content.length ? content : [{ type: 'text', text: '' }],
+            model: body.model, stop_reason: stopReason, stop_sequence: null,
+            usage: { input_tokens: data.usage.prompt_tokens, output_tokens: data.usage.completion_tokens },
+          });
+          return;
+        }
+      }
+      const retryAfter = upstream.headers.get('retry-after');
+      const headers = { ...JSON_HEADERS };
+      if (retryAfter) headers['Retry-After'] = retryAfter;
+      res.writeHead(529, headers);
+      res.end(JSON.stringify({ error: { type: 'overloaded_error', message: 'NVIDIA API hız sınırına ulaşıldı' } }));
+      return;
+    }
     sendJson(res, upstream.status, { error: { type: 'api_error', message: 'Upstream API hatası' } });
     return;
   }
@@ -422,43 +490,7 @@ async function handleMessages(req, res, authTokenId) {
   const data = await upstream.json();
   const choice = data.choices[0];
   const message = choice.message;
-
-  const content = [];
-
-  if (message.reasoning_content) {
-    content.push({ type: 'thinking', thinking: message.reasoning_content });
-  }
-
-  if (message.content) {
-    const text = message.content;
-    if (text.startsWith('<think>')) {
-      const endIdx = text.indexOf('</think>');
-      if (endIdx !== -1) {
-        const thinking = text.slice(7, endIdx);
-        const rest = text.slice(endIdx + 8).trim();
-        if (thinking) content.push({ type: 'thinking', thinking });
-        if (rest) content.push({ type: 'text', text: rest });
-      } else {
-        // No closing tag (max_tokens truncation) — all content is thinking
-        content.push({ type: 'thinking', thinking: text.slice(7) });
-      }
-    } else {
-      content.push({ type: 'text', text });
-    }
-  }
-
-  if (message.tool_calls?.length) {
-    for (const tc of message.tool_calls) {
-      let parsedInput;
-      try { parsedInput = JSON.parse(tc.function.arguments); } catch (e) { parsedInput = {}; }
-      content.push({
-        type: 'tool_use',
-        id: tc.id,
-        name: tc.function.name,
-        input: parsedInput,
-      });
-    }
-  }
+  const content = buildContent(message);
 
   let stop_reason = 'end_turn';
   if (choice.finish_reason === 'length') stop_reason = 'max_tokens';
