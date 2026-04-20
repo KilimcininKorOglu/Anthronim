@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.5.0] - 2026-04-20
+
+### Added
+- NVIDIA 429 rate limit handling with automatic key retry and Anthropic `overloaded_error` mapping
+- Model benchmark system with TTFB and response time tracking
+- Parallel benchmark runner via `Promise.allSettled`
+- Homepage navigation link to admin pages
+- RunCodingPlan as recommended setup method on landing page
+- Benchmark methodology description to landing page
+
+### Changed
+- Benchmark timeout set to 5 minutes as practical upper bound
+- Extract `buildContent()` for non-streaming response conversion (deduplication)
+
+### Fixed
+- Exclude failed requests from model stats rankings
+- Use existing button classes for benchmark UI elements
+- Status badge and key/token table pattern consistency for benchmarks
+- Model parameter for RunCodingPlan setup command
+
 ## [1.4.0] - 2026-04-15
 
 ### Added
