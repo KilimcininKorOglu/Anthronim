@@ -78,7 +78,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     }
 
     if (pathname === '/') {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'", 'Cache-Control': 'no-store' });
       res.end(indexHtml);
       return;
     }

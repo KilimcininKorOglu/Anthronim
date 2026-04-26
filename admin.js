@@ -155,7 +155,7 @@ export async function handleAdmin(req, res, pathname) {
   // GET /admin — Dashboard HTML
   if (sub === '' && req.method === 'GET') {
     const html = loadHtml();
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" });
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'", 'Cache-Control': 'no-store' });
     res.end(html);
     return;
   }
@@ -163,7 +163,7 @@ export async function handleAdmin(req, res, pathname) {
   // GET /admin/logs — Logs HTML
   if (sub === '/logs' && req.method === 'GET') {
     const html = loadLogsHtml();
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" });
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'", 'Cache-Control': 'no-store' });
     res.end(html);
     return;
   }
