@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.5] - 2026-04-26
+
+### Fixed
+- Add IP-based rate limiting to `/register` and `/verify` endpoints (`REG_MAX_PER_IP`, `REG_IP_WINDOW_MINUTES`)
+- Preserve registration row on verification attempt exhaustion to maintain email rate limit
+- Exclude zero-request tokens from active user count in public stats
+
 ## [1.6.0] - 2026-04-26
 
 ### Added
