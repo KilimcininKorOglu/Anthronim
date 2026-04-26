@@ -25,7 +25,7 @@ export const MAX_FAILURES = parseInt(process.env.MAX_AUTH_FAILURES || '5', 10);
 export const LOCKOUT_MS = parseInt(process.env.LOCKOUT_MINUTES || '15', 10) * 60 * 1000;
 
 const JWT_SECRET = process.env.ADMIN_JWT_SECRET || randomBytes(32).toString('hex');
-const JWT_EXPIRY_SEC = parseInt(process.env.ADMIN_JWT_HOURS || '24', 10) * 3600;
+const JWT_EXPIRY_SEC = parseInt(process.env.ADMIN_JWT_HOURS || '168', 10) * 3600;
 if (!process.env.ADMIN_JWT_SECRET) console.warn('ADMIN_JWT_SECRET ayarlanmadı — her restart oturumları geçersiz kılar');
 
 function base64url(buf) { return (Buffer.isBuffer(buf) ? buf : Buffer.from(buf)).toString('base64url'); }
