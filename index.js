@@ -2,14 +2,19 @@ import http from 'node:http';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats, listBenchmarkModels, upsertBenchmark, addToken, addRegistration, findRegistration, incrementRegistrationAttempts, deleteRegistration, cleanupExpiredRegistrations, hasRecentRegistration, deactivateTokenByEmail, hashToken, invalidateTokenCache } from './db.js';
-import { handleAdmin, ADMIN_PATH } from './admin.js';
+import { handleAdmin, ADMIN_PATH, getClientIp } from './admin.js';
 
 loadDotEnv();
 initDb();
 cleanupOldLogs();
 cleanupExpiredRegistrations();
 const LOG_CLEANUP_MS = parseInt(process.env.LOG_CLEANUP_HOURS || '6', 10) * 60 * 60 * 1000;
-setInterval(() => { cleanupOldLogs(); cleanupExpiredRegistrations(); }, LOG_CLEANUP_MS);
+setInterval(() => {
+  cleanupOldLogs();
+  cleanupExpiredRegistrations();
+  const now = Date.now();
+  for (const [ip, rec] of regIpCounter) { if (now >= rec.resetAt) regIpCounter.delete(ip); }
+}, LOG_CLEANUP_MS);
 
 const API_BASE = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
 const BENCH_SHORT_PROMPT = 'Say hi in one word.';
@@ -23,6 +28,9 @@ const AUTH_TOKEN_ENV = process.env.AUTH_TOKEN;
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL;
 const BREVO_SENDER_NAME = process.env.BREVO_SENDER_NAME || 'Anthronim';
+const REG_MAX_PER_IP = parseInt(process.env.REG_MAX_PER_IP || '10', 10);
+const REG_IP_WINDOW_MS = parseInt(process.env.REG_IP_WINDOW_MINUTES || '60', 10) * 60 * 1000;
+const regIpCounter = new Map();
 
 if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
   indexHtml = indexHtml.replace(/<!-- REGISTRATION_START -->[\s\S]*?<!-- REGISTRATION_END -->/, '<p>Erişim anahtarı almak için yönetici ile iletişime geçin.</p>');
@@ -99,11 +107,26 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       return;
     }
 
-    if (pathname === '/register' && req.method === 'POST') {
+    if ((pathname === '/register' || pathname === '/verify') && req.method === 'POST') {
       if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
         sendJson(res, 404, { error: { type: 'not_found', message: 'Kayıt sistemi aktif değil' } });
         return;
       }
+      const ip = getClientIp(req);
+      const now = Date.now();
+      const ipRecord = regIpCounter.get(ip);
+      if (ipRecord && now < ipRecord.resetAt) {
+        if (ipRecord.count >= REG_MAX_PER_IP) {
+          sendJson(res, 429, { error: { type: 'rate_limit_error', message: 'Çok fazla istek. Lütfen daha sonra tekrar deneyin.' } });
+          return;
+        }
+        ipRecord.count++;
+      } else {
+        regIpCounter.set(ip, { count: 1, resetAt: now + REG_IP_WINDOW_MS });
+      }
+    }
+
+    if (pathname === '/register' && req.method === 'POST') {
       const body = await readJsonBody(req);
       const email = (body.email || '').trim().toLowerCase();
       if (!email || !EMAIL_REGEX.test(email)) {
@@ -130,10 +153,6 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     }
 
     if (pathname === '/verify' && req.method === 'POST') {
-      if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
-        sendJson(res, 404, { error: { type: 'not_found', message: 'Kayıt sistemi aktif değil' } });
-        return;
-      }
       const body = await readJsonBody(req);
       const email = (body.email || '').trim().toLowerCase();
       const code = (body.code || '').trim();
