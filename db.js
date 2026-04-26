@@ -226,7 +226,7 @@ export function initDb() {
       error = excluded.error,
       created_at = datetime('now')
   `);
-  stmtGetBenchmarks = db.prepare('SELECT model, short_ttfb, short_total, long_ttfb, long_total, error, created_at FROM model_benchmarks ORDER BY model');
+  stmtGetBenchmarks = db.prepare('SELECT mb.model, mb.short_ttfb, mb.short_total, mb.long_ttfb, mb.long_total, mb.error, mb.created_at FROM model_benchmarks mb INNER JOIN benchmark_config bc ON mb.model = bc.model AND bc.is_active = 1 ORDER BY mb.model');
 
   // Registration statements
   stmtInsertRegistration = db.prepare('INSERT INTO pending_registrations (email, code, expires_at) VALUES (?, ?, ?)');
