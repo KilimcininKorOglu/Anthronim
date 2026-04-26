@@ -276,7 +276,7 @@ export async function handleAdmin(req, res, pathname) {
     const token = signJwt({ user: ADMIN_USER });
     res.writeHead(302, {
       'Location': ADMIN_PATH,
-      'Set-Cookie': `admin_token=${token}; Path=${ADMIN_PATH}; HttpOnly; SameSite=Strict; Secure; Max-Age=${JWT_EXPIRY_SEC}`,
+      'Set-Cookie': `admin_token=${token}; Path=${ADMIN_PATH}; HttpOnly; SameSite=Lax; Secure; Max-Age=${JWT_EXPIRY_SEC}`,
     });
     res.end();
     return;
@@ -285,7 +285,7 @@ export async function handleAdmin(req, res, pathname) {
   if (sub === '/logout') {
     res.writeHead(302, {
       'Location': ADMIN_PATH + '/login',
-      'Set-Cookie': `admin_token=; Path=${ADMIN_PATH}; HttpOnly; SameSite=Strict; Secure; Max-Age=0`,
+      'Set-Cookie': `admin_token=; Path=${ADMIN_PATH}; HttpOnly; SameSite=Lax; Secure; Max-Age=0`,
     });
     res.end();
     return;
