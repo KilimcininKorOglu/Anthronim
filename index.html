@@ -111,6 +111,72 @@
       font-weight: 700;
     }
 
+    .reg-form {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .reg-form input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .reg-form input:focus {
+      border-color: var(--green-muted);
+    }
+
+    .reg-form input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .reg-form button {
+      background: var(--green-faint);
+      border: 1px solid var(--green-muted);
+      color: var(--green);
+      padding: 8px 16px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .reg-form button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .reg-msg {
+      font-size: 11px;
+      margin-top: 8px;
+    }
+
+    .reg-msg.error {
+      color: #ff4444;
+    }
+
+    .reg-msg.success {
+      color: var(--green);
+    }
+
+    .token-display {
+      background: var(--bg);
+      border: 1px solid var(--green-muted);
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 11px;
+      word-break: break-all;
+      color: var(--green);
+      cursor: pointer;
+    }
+
     .table-wrap {
       border: 1px solid var(--border);
       overflow-x: auto;
@@ -257,9 +323,28 @@
 
   <div class="access-box">
     <p>Bu proxy'ye erişim anahtarı gereklidir.</p>
-    <p>Erişim anahtarı almak için <a href="https://x.com/KorOglan/status/2043789537957052915" target="_blank"
-        rel="noopener">x.com/koroglan</a>
-      tweet'ine yorum yazın.</p>
+    <!-- REGISTRATION_START -->
+    <div id="regStep1">
+      <p>Erişim anahtarı almak için e-posta adresinizi girin:</p>
+      <div class="reg-form">
+        <input type="email" id="regEmail" placeholder="ornek@mail.com" autocomplete="email">
+        <button id="regBtn" onclick="handleRegister()">kayit ol</button>
+      </div>
+    </div>
+    <div id="regStep2" style="display:none">
+      <p>Doğrulama kodu e-posta adresinize gönderildi:</p>
+      <div class="reg-form">
+        <input type="text" id="regCode" placeholder="6 haneli kod" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+        <button id="verifyBtn" onclick="handleVerify()">dogrula</button>
+      </div>
+    </div>
+    <div id="regStep3" style="display:none">
+      <p>Erişim anahtarınız oluşturuldu. Kopyalamak için tıklayın:</p>
+      <div class="token-display" id="tokenDisplay" onclick="copyToken()"></div>
+      <div class="reg-msg success" id="copyMsg" style="display:none">Kopyalandı</div>
+    </div>
+    <div class="reg-msg" id="regMsg"></div>
+    <!-- REGISTRATION_END -->
   </div>
 
   <div class="section">
@@ -419,6 +504,83 @@
         document.getElementById('statsContainer').innerHTML = '<div class="empty">İstatistikler yüklenemedi</div>';
       }
     }
+
+    let regEmailValue = '';
+
+    function showMsg(text, isError) {
+      const el = document.getElementById('regMsg');
+      el.textContent = text;
+      el.className = 'reg-msg ' + (isError ? 'error' : 'success');
+    }
+
+    async function handleRegister() {
+      const email = document.getElementById('regEmail').value.trim();
+      if (!email) return;
+      const btn = document.getElementById('regBtn');
+      btn.disabled = true;
+      showMsg('', false);
+      try {
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showMsg(data.error?.message || 'Bir hata oluştu', true);
+          btn.disabled = false;
+          return;
+        }
+        regEmailValue = email;
+        document.getElementById('regStep1').style.display = 'none';
+        document.getElementById('regStep2').style.display = 'block';
+        showMsg(data.message, false);
+        document.getElementById('regCode').focus();
+      } catch {
+        showMsg('Bağlantı hatası', true);
+        btn.disabled = false;
+      }
+    }
+
+    async function handleVerify() {
+      const code = document.getElementById('regCode').value.trim();
+      if (!code) return;
+      const btn = document.getElementById('verifyBtn');
+      btn.disabled = true;
+      showMsg('', false);
+      try {
+        const res = await fetch('/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: regEmailValue, code }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showMsg(data.error?.message || 'Bir hata oluştu', true);
+          btn.disabled = false;
+          return;
+        }
+        document.getElementById('regStep2').style.display = 'none';
+        document.getElementById('regMsg').style.display = 'none';
+        document.getElementById('regStep3').style.display = 'block';
+        document.getElementById('tokenDisplay').textContent = data.token;
+      } catch {
+        showMsg('Bağlantı hatası', true);
+        btn.disabled = false;
+      }
+    }
+
+    function copyToken() {
+      const token = document.getElementById('tokenDisplay').textContent;
+      navigator.clipboard.writeText(token).then(() => {
+        const msg = document.getElementById('copyMsg');
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 2000);
+      });
+    }
+
+    document.getElementById('regEmail').addEventListener('keydown', e => { if (e.key === 'Enter') handleRegister(); });
+    document.getElementById('regCode').addEventListener('keydown', e => { if (e.key === 'Enter') handleVerify(); });
 
     document.getElementById('baseUrl').textContent = location.origin;
     document.getElementById('baseUrlRcp').textContent = location.origin;

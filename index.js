@@ -1,22 +1,32 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats, listBenchmarkModels, upsertBenchmark } from './db.js';
+import crypto from 'node:crypto';
+import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats, listBenchmarkModels, upsertBenchmark, addToken, addRegistration, findRegistration, incrementRegistrationAttempts, deleteRegistration, cleanupExpiredRegistrations, hasRecentRegistration, deactivateTokenByEmail, hashToken, invalidateTokenCache } from './db.js';
 import { handleAdmin, ADMIN_PATH } from './admin.js';
 
 loadDotEnv();
 initDb();
 cleanupOldLogs();
-setInterval(cleanupOldLogs, parseInt(process.env.LOG_CLEANUP_HOURS || '6', 10) * 60 * 60 * 1000);
+cleanupExpiredRegistrations();
+const LOG_CLEANUP_MS = parseInt(process.env.LOG_CLEANUP_HOURS || '6', 10) * 60 * 60 * 1000;
+setInterval(() => { cleanupOldLogs(); cleanupExpiredRegistrations(); }, LOG_CLEANUP_MS);
 
 const API_BASE = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
 const BENCH_SHORT_PROMPT = 'Say hi in one word.';
 const BENCH_LONG_PROMPT = 'Write a Python binary search tree implementation with insert, delete, search, and traversal. Include docstrings.';
 const BENCH_INTERVAL = parseInt(process.env.BENCH_INTERVAL_MINUTES || '60', 10) * 60 * 1000;
-const indexHtml = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
+let indexHtml = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const AUTH_TOKEN_ENV = process.env.AUTH_TOKEN;
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL;
+const BREVO_SENDER_NAME = process.env.BREVO_SENDER_NAME || 'Anthronim';
+
+if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
+  indexHtml = indexHtml.replace(/<!-- REGISTRATION_START -->[\s\S]*?<!-- REGISTRATION_END -->/, '<p>Erişim anahtarı almak için yönetici ile iletişime geçin.</p>');
+}
 
 const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
 let modelCache = null;
@@ -86,6 +96,72 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
 
     if (pathname === '/stats' && req.method === 'GET') {
       sendJson(res, 200, getPublicStats());
+      return;
+    }
+
+    if (pathname === '/register' && req.method === 'POST') {
+      if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
+        sendJson(res, 404, { error: { type: 'not_found', message: 'Kayıt sistemi aktif değil' } });
+        return;
+      }
+      const body = await readJsonBody(req);
+      const email = (body.email || '').trim().toLowerCase();
+      if (!email || !EMAIL_REGEX.test(email)) {
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'Geçerli bir e-posta adresi gerekli' } });
+        return;
+      }
+      if (hasRecentRegistration(email)) {
+        sendJson(res, 429, { error: { type: 'rate_limit_error', message: 'Bu e-posta için zaten bir doğrulama kodu gönderildi. Lütfen 5 dakika bekleyin.' } });
+        return;
+      }
+      const code = generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19);
+      const regId = addRegistration(email, hashToken(code), expiresAt);
+      try {
+        await sendVerificationEmail(email, code);
+      } catch (err) {
+        deleteRegistration(regId);
+        console.error('E-posta gönderimi başarısız:', err.message);
+        sendJson(res, 500, { error: { type: 'api_error', message: 'Doğrulama e-postası gönderilemedi' } });
+        return;
+      }
+      sendJson(res, 200, { message: 'Doğrulama kodu gönderildi' });
+      return;
+    }
+
+    if (pathname === '/verify' && req.method === 'POST') {
+      if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
+        sendJson(res, 404, { error: { type: 'not_found', message: 'Kayıt sistemi aktif değil' } });
+        return;
+      }
+      const body = await readJsonBody(req);
+      const email = (body.email || '').trim().toLowerCase();
+      const code = (body.code || '').trim();
+      if (!email || !code) {
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'E-posta ve doğrulama kodu gerekli' } });
+        return;
+      }
+      const reg = findRegistration(email);
+      if (!reg) {
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'Geçerli bir kayıt bulunamadı. Lütfen tekrar kayıt olun.' } });
+        return;
+      }
+      if (reg.attempts >= 3) {
+        deleteRegistration(reg.id);
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'Deneme limiti aşıldı. Lütfen tekrar kayıt olun.' } });
+        return;
+      }
+      if (hashToken(code) !== reg.code) {
+        incrementRegistrationAttempts(reg.id);
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: `Geçersiz doğrulama kodu. ${2 - reg.attempts} deneme hakkınız kaldı.` } });
+        return;
+      }
+      deactivateTokenByEmail(email);
+      const token = generateAuthToken();
+      addToken(token, email);
+      invalidateTokenCache();
+      deleteRegistration(reg.id);
+      sendJson(res, 200, { token, message: 'Erişim anahtarınız oluşturuldu' });
       return;
     }
 
@@ -193,6 +269,34 @@ async function getModels() {
   }
   return modelCache || { data: [], has_more: false, first_id: null, last_id: null };
 }
+
+function generateVerificationCode() {
+  return crypto.randomInt(100000, 999999).toString();
+}
+
+function generateAuthToken() {
+  return 'hermes-' + crypto.randomBytes(32).toString('hex');
+}
+
+async function sendVerificationEmail(email, code) {
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'content-type': 'application/json',
+      'api-key': BREVO_API_KEY,
+    },
+    body: JSON.stringify({
+      sender: { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
+      to: [{ email }],
+      subject: 'Anthronim - Doğrulama Kodu',
+      textContent: `Doğrulama kodunuz: ${code}\n\nBu kod 10 dakika geçerlidir.`,
+    }),
+  });
+  if (!res.ok) throw new Error(`Brevo API error: ${res.status}`);
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function sendJson(res, status, data) {
   res.writeHead(status, JSON_HEADERS);

@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || join(__dirname, 'anthronim.db');
 const LOG_RETENTION_DAYS = parseInt(process.env.LOG_RETENTION_DAYS || '30', 10);
 
-function hashToken(token) {
+export function hashToken(token) {
   return createHash('sha256').update(token).digest('hex');
 }
 
@@ -63,6 +63,15 @@ let stmtRemoveBenchmarkModel;
 let stmtToggleBenchmarkModel;
 let stmtUpsertBenchmark;
 let stmtGetBenchmarks;
+
+// Prepared statement cache — Registration
+let stmtInsertRegistration;
+let stmtFindRegistration;
+let stmtIncrementAttempts;
+let stmtDeleteRegistration;
+let stmtCleanupRegistrations;
+let stmtCountRecentRegistrations;
+let stmtFindTokenByLabel;
 
 export function initDb() {
   db = new Database(DB_PATH);
@@ -123,6 +132,15 @@ export function initDb() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_model_benchmarks_model ON model_benchmarks(model);
+
+    CREATE TABLE IF NOT EXISTS pending_registrations (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      email      TEXT NOT NULL,
+      code       TEXT NOT NULL,
+      attempts   INTEGER DEFAULT 0,
+      expires_at TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   // Idempotent column additions
@@ -209,6 +227,15 @@ export function initDb() {
       created_at = datetime('now')
   `);
   stmtGetBenchmarks = db.prepare('SELECT model, short_ttfb, short_total, long_ttfb, long_total, error, created_at FROM model_benchmarks ORDER BY model');
+
+  // Registration statements
+  stmtInsertRegistration = db.prepare('INSERT INTO pending_registrations (email, code, expires_at) VALUES (?, ?, ?)');
+  stmtFindRegistration = db.prepare("SELECT * FROM pending_registrations WHERE email = ? AND expires_at > datetime('now') ORDER BY id DESC LIMIT 1");
+  stmtIncrementAttempts = db.prepare('UPDATE pending_registrations SET attempts = attempts + 1 WHERE id = ?');
+  stmtDeleteRegistration = db.prepare('DELETE FROM pending_registrations WHERE id = ?');
+  stmtCleanupRegistrations = db.prepare("DELETE FROM pending_registrations WHERE expires_at <= datetime('now')");
+  stmtCountRecentRegistrations = db.prepare("SELECT COUNT(*) AS count FROM pending_registrations WHERE email = ? AND created_at > datetime('now', '-5 minutes')");
+  stmtFindTokenByLabel = db.prepare('SELECT id FROM auth_tokens WHERE label = ? AND is_active = 1');
 }
 
 // --- API Key cache ---
@@ -226,7 +253,7 @@ function loadActiveKeys() {
 
 // --- Auth Token cache ---
 
-function invalidateTokenCache() {
+export function invalidateTokenCache() {
   cachedTokens = null;
 }
 
@@ -441,4 +468,41 @@ export function upsertBenchmark(model, shortTtfb, shortTotal, longTtfb, longTota
 
 export function getBenchmarks() {
   return stmtGetBenchmarks.all();
+}
+
+// --- Registration functions ---
+
+export function addRegistration(email, hashedCode, expiresAt) {
+  return stmtInsertRegistration.run(email, hashedCode, expiresAt).lastInsertRowid;
+}
+
+export function findRegistration(email) {
+  return stmtFindRegistration.get(email) || null;
+}
+
+export function incrementRegistrationAttempts(id) {
+  stmtIncrementAttempts.run(id);
+}
+
+export function deleteRegistration(id) {
+  return stmtDeleteRegistration.run(id).changes > 0;
+}
+
+export function cleanupExpiredRegistrations() {
+  const result = stmtCleanupRegistrations.run();
+  if (result.changes > 0) console.log(`${result.changes} süresi dolmuş kayıt silindi`);
+}
+
+export function hasRecentRegistration(email) {
+  return stmtCountRecentRegistrations.get(email).count > 0;
+}
+
+export function deactivateTokenByEmail(email) {
+  const existing = stmtFindTokenByLabel.get(email);
+  if (existing) {
+    stmtToggleToken.run(0, existing.id);
+    invalidateTokenCache();
+    return true;
+  }
+  return false;
 }
