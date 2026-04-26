@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.6.0] - 2026-04-26
+
+### Added
+- Self-service registration with Brevo email verification (`/register`, `/verify` endpoints)
+- Landing page registration form with 3-step flow (email, code, token)
+- Conditional activation via `BREVO_API_KEY` environment variable
+- Server-side auth token generation (`hermes-` prefix + 64 hex chars)
+
+### Fixed
+- Use proper Turkish characters in registration form buttons
+
 ## [1.5.0] - 2026-04-20
 
 ### Added
