@@ -74,7 +74,6 @@
 
     .header p {
       font-size: 12px;
-      color: var(--text-muted);
     }
 
     .section {
@@ -100,7 +99,6 @@
 
     .access-box p {
       margin-bottom: 12px;
-      color: var(--text-dim);
       font-size: 12px;
     }
 
@@ -198,13 +196,8 @@
     th {
       font-size: 10px;
       font-weight: 700;
-      color: var(--text-muted);
       letter-spacing: 1.5px;
       background: var(--surface);
-    }
-
-    td {
-      color: var(--text-dim);
     }
 
     tr:last-child td {
@@ -220,14 +213,13 @@
 
     .footer {
       font-size: 10px;
-      color: var(--text-muted);
       text-align: center;
       padding-top: 16px;
       border-top: 1px solid var(--border);
     }
 
-    .footer a {
-      color: var(--text-muted);
+    a {
+      color: var(--text);
       text-decoration: none;
     }
 
@@ -246,7 +238,6 @@
 
     .config-note {
       font-size: 11px;
-      color: var(--text-muted);
       margin-top: 12px;
     }
 
@@ -271,7 +262,6 @@
 
     .stat-card .label {
       font-size: 10px;
-      color: var(--text-muted);
       letter-spacing: 1px;
       margin-top: 4px;
     }
@@ -286,7 +276,7 @@
 
     .chart-bar .bar {
       flex: 1;
-      background: var(--green-muted);
+      background: var(--green);
       min-height: 1px;
     }
 
@@ -294,13 +284,11 @@
       display: flex;
       justify-content: space-between;
       font-size: 9px;
-      color: var(--text-muted);
       margin-top: 4px;
     }
 
     .model-count {
       font-size: 11px;
-      color: var(--text-muted);
       margin-bottom: 12px;
     }
 
@@ -334,7 +322,8 @@
     <div id="regStep2" style="display:none">
       <p>Doğrulama kodu e-posta adresinize gönderildi:</p>
       <div class="reg-form">
-        <input type="text" id="regCode" placeholder="6 haneli kod" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+        <input type="text" id="regCode" placeholder="6 haneli kod" maxlength="6" inputmode="numeric"
+          autocomplete="one-time-code">
         <button id="verifyBtn" onclick="handleVerify()">doğrula</button>
       </div>
     </div>
@@ -369,8 +358,11 @@
     <pre><code>npx runcodingplan -p anthronim</code></pre>
     <p class="config-note" style="margin-top:8px">Diğer modelleri eklemek için:</p>
     <pre><code>npx runcodingplan -p anthronim --add-model minimaxai/minimax-m2.7</code></pre>
-    <p class="config-note" style="margin-top:4px">Detaylar: <a href="https://github.com/ersinkoc/RunCodingPlan" target="_blank" rel="noopener">github.com/ersinkoc/RunCodingPlan</a></p>
-    <p class="config-note" style="margin-top:16px;margin-bottom:12px">Alternatif olarak <code>~/.claude/settings.json</code> dosyasını düzenleyin:</p>
+    <p class="config-note" style="margin-top:4px">Detaylar: <a href="https://github.com/ersinkoc/RunCodingPlan"
+        target="_blank" rel="noopener">github.com/ersinkoc/RunCodingPlan</a></p>
+    <p class="config-note" style="margin-top:16px;margin-bottom:12px">Alternatif olarak
+      <code>~/.claude/settings.json</code> dosyasını düzenleyin:
+    </p>
     <pre><code>{
   "env": {
     "ANTHROPIC_BASE_URL": "<span id="baseUrl"></span>",

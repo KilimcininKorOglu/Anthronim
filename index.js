@@ -712,7 +712,7 @@ async function handleStream(upstream, model, res) {
   const reader = upstream.body.getReader();
   res.socket?.once('close', () => {
     clientGone = true;
-    reader.cancel().catch(() => {});
+    reader.cancel().catch(() => { });
   });
 
   const writeSse = async (chunk) => {
