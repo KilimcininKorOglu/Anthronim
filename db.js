@@ -180,7 +180,7 @@ export function initDb() {
       (SELECT COUNT(*) FROM request_log) AS total_requests,
       (SELECT COUNT(*) FROM request_log WHERE created_at >= datetime('now', 'localtime', 'start of day', 'utc')) AS today_requests,
       (SELECT COUNT(*) FROM api_keys WHERE is_active = 1) AS active_keys,
-      (SELECT COUNT(*) FROM auth_tokens WHERE is_active = 1) AS active_tokens,
+      (SELECT COUNT(*) FROM auth_tokens WHERE is_active = 1 AND request_count > 0) AS active_tokens,
       (SELECT COUNT(*) FROM request_log WHERE status_code >= 400) AS error_requests
   `);
   stmtGetHourlyStats = db.prepare(`
