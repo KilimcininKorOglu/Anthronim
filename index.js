@@ -147,8 +147,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
         return;
       }
       if (reg.attempts >= 3) {
-        deleteRegistration(reg.id);
-        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'Deneme limiti aşıldı. Lütfen tekrar kayıt olun.' } });
+        sendJson(res, 429, { error: { type: 'rate_limit_error', message: 'Deneme limiti aşıldı. Lütfen 5 dakika bekleyip tekrar kayıt olun.' } });
         return;
       }
       if (hashToken(code) !== reg.code) {
