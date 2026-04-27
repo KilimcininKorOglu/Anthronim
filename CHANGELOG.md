@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.7.0] - 2026-04-27
+
+### Added
+- JWT cookie login page for admin panel (HMAC-SHA256 via node:crypto, zero deps)
+- Login/logout endpoints (`/admin/login`, `/admin/logout`)
+- Basic Auth fallback for API clients (backward compatible)
+- `ADMIN_JWT_SECRET` and `ADMIN_JWT_HOURS` environment variables
+
+### Changed
+- Update color scheme: all text colors unified to `#00ff41` across all pages
+
+### Fixed
+- Filter inactive models from public benchmark results (INNER JOIN with benchmark_config)
+- Disable browser caching for all static HTML pages (`Cache-Control: no-store`)
+- Change cookie SameSite from Strict to Lax for Firefox POST→redirect compatibility
+- Default JWT expiry set to 1 week (168 hours)
+
 ## [1.6.5] - 2026-04-26
 
 ### Fixed
