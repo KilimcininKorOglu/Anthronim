@@ -18,7 +18,7 @@ ENV TZ=Europe/Istanbul
 WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules
-COPY package.json index.js db.js admin.js admin.html index.html logs.html ./
+COPY package.json index.js db.js admin.js lang.js admin.html index.html logs.html ./
 
 RUN mkdir -p /app/data && chown node:node /app/data
 

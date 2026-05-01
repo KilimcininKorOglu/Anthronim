@@ -5,9 +5,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="description" content="Anthronim upstream istek logları.">
+  <meta name="description" content="{{logs_meta}}">
   <meta name="theme-color" content="#000000">
-  <title>Anthronim // Loglar</title>
+  <title>{{logs_title}}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
@@ -224,22 +224,23 @@
 <body>
 
   <div class="header">
-    <h1>Anthronim // Upstream Loglar</h1>
+    <h1>{{logs_heading}}</h1>
     <div class="header-nav">
-      <a href="/">Ana Sayfa</a>
-      <a href="/admin">Panel</a>
-      <a href="/admin/logout">Çıkış</a>
+      <a href="/">{{home}}</a>
+      <a href="/admin">{{panel}}</a>
+      <a href="/admin/logout">{{logout}}</a>
+      <a href="/set-lang/tr">tr</a> · <a href="/set-lang/en">en</a>
     </div>
   </div>
 
   <div class="filters">
-    <label>Durum</label>
+    <label>{{filter_status}}</label>
     <select id="filterStatus">
-      <option value="error">Sadece Hatalar</option>
-      <option value="all">Tümü</option>
+      <option value="error">{{errors_only}}</option>
+      <option value="all">{{all}}</option>
     </select>
     <label>Model</label>
-    <input type="text" id="filterModel" placeholder="ör: meta/llama-3..." style="width: 220px">
+    <input type="text" id="filterModel" placeholder="{{model_placeholder_logs}}" style="width: 220px">
     <label>Limit</label>
     <select id="filterLimit">
       <option value="50">50</option>
@@ -252,29 +253,29 @@
     <table>
       <thead>
         <tr>
-          <th>Tarih</th>
+          <th>{{date}}</th>
           <th>Model</th>
-          <th>Status</th>
-          <th>API Anahtarı</th>
-          <th>Erişim Anahtarı</th>
-          <th>Detay</th>
+          <th>{{status}}</th>
+          <th>{{api_key}}</th>
+          <th>{{access_key}}</th>
+          <th>{{detail}}</th>
         </tr>
       </thead>
       <tbody id="logsBody">
         <tr>
-          <td colspan="6" class="empty">Yükleniyor...</td>
+          <td colspan="6" class="empty">{{loading}}</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <div class="pagination">
-    <button id="prevBtn" disabled onclick="prevPage()">Önceki</button>
+    <button id="prevBtn" disabled onclick="prevPage()">{{previous}}</button>
     <span id="pageInfo">-</span>
-    <button id="nextBtn" disabled onclick="nextPage()">Sonraki</button>
+    <button id="nextBtn" disabled onclick="nextPage()">{{next}}</button>
   </div>
 
-  <div class="footer">Otomatik yenileme: 30s</div>
+  <div class="footer">{{auto_refresh}}</div>
 
   <script>
     let currentOffset = 0;
@@ -319,13 +320,13 @@
       try {
         const res = await fetch('/admin/api/logs?' + params.toString());
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'API hatası');
+        if (!res.ok) throw new Error(data.error || '{{api_error}}');
 
         currentTotal = data.total;
         const body = document.getElementById('logsBody');
 
         if (!data.logs || data.logs.length === 0) {
-          body.innerHTML = '<tr><td colspan="6" class="empty">Kayıt bulunamadı</td></tr>';
+          body.innerHTML = '<tr><td colspan="6" class="empty">{{no_records}}</td></tr>';
         } else {
           body.innerHTML = data.logs.map(l => {
             const hasDetail = l.error_detail && l.error_detail.length > 0;
@@ -347,9 +348,9 @@
         document.getElementById('nextBtn').disabled = currentOffset + limit >= currentTotal;
         const page = Math.floor(currentOffset / limit) + 1;
         const totalPages = Math.ceil(currentTotal / limit) || 1;
-        document.getElementById('pageInfo').textContent = `${page} / ${totalPages} (${currentTotal} kayıt)`;
+        document.getElementById('pageInfo').textContent = `${page} / ${totalPages} (${currentTotal} {{records_suffix}})`;
       } catch (err) {
-        console.error('Loglar yüklenemedi:', err);
+        alert('{{api_error}}');
       }
     }
 

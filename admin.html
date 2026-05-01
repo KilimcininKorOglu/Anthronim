@@ -5,9 +5,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="description" content="Anthronim yönetim paneli.">
+  <meta name="description" content="{{admin_meta}}">
   <meta name="theme-color" content="#000000">
-  <title>Anthronim // Yönetim</title>
+  <title>{{admin_title}}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
@@ -362,95 +362,96 @@
 <body>
 
   <div class="header">
-    <h1>Anthronim // Yönetim</h1>
+    <h1>{{admin_title}}</h1>
     <div class="header-nav">
-      <a href="/">Ana Sayfa</a>
-      <a href="/admin/logs">Loglar</a>
-      <a href="/admin/logout">Çıkış</a>
+      <a href="/">{{home}}</a>
+      <a href="/admin/logs">{{logs}}</a>
+      <a href="/admin/logout">{{logout}}</a>
+      <a href="/set-lang/tr">tr</a> · <a href="/set-lang/en">en</a>
     </div>
   </div>
 
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="label">Toplam İstek</div>
+      <div class="label">{{total_requests}}</div>
       <div class="value" id="totalRequests">-</div>
     </div>
     <div class="stat-card">
-      <div class="label">Son 24 Saat</div>
+      <div class="label">{{last_24h_short}}</div>
       <div class="value" id="todayRequests">-</div>
     </div>
     <div class="stat-card">
-      <div class="label">Aktif Anahtar</div>
+      <div class="label">{{active_keys}}</div>
       <div class="value" id="activeKeys">-</div>
     </div>
     <div class="stat-card">
-      <div class="label">Aktif Token</div>
+      <div class="label">{{active_tokens}}</div>
       <div class="value" id="activeTokens">-</div>
     </div>
     <div class="stat-card">
-      <div class="label">Hata Oranı</div>
+      <div class="label">{{error_rate}}</div>
       <div class="value" id="errorRate">-</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-header">Saatlik İstek Grafiği / Son 24 Saat</div>
+    <div class="section-header">{{hourly_chart}}</div>
     <div class="chart-container" id="hourlyChart">
-      <div class="empty">Yükleniyor...</div>
+      <div class="empty">{{loading}}</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-header">Model Kullanımı</div>
+    <div class="section-header">{{model_usage}}</div>
     <div id="modelStats">
-      <div class="empty">Yükleniyor...</div>
+      <div class="empty">{{loading}}</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-header">API Anahtarları</div>
+    <div class="section-header">{{api_keys}}</div>
     <form class="add-form" id="addKeyForm">
       <input type="text" name="key" placeholder="nvapi-..." required>
-      <input type="text" name="label" placeholder="etiket">
-      <button type="submit" class="btn-primary">Ekle</button>
+      <input type="text" name="label" placeholder="{{label}}">
+      <button type="submit" class="btn-primary">{{add}}</button>
     </form>
     <div id="keysContainer">
-      <div class="empty">Yükleniyor...</div>
+      <div class="empty">{{loading}}</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-header">Erişim Anahtarları</div>
+    <div class="section-header">{{access_keys}}</div>
     <form class="add-form" id="addTokenForm">
       <input type="text" name="token" placeholder="hermes-..." required>
-      <input type="text" name="label" placeholder="etiket">
-      <button type="button" class="btn-primary" onclick="generateToken()">Üret</button>
-      <button type="submit" class="btn-primary">Ekle</button>
+      <input type="text" name="label" placeholder="{{label}}">
+      <button type="button" class="btn-primary" onclick="generateToken()">{{generate}}</button>
+      <button type="submit" class="btn-primary">{{add}}</button>
     </form>
     <div id="tokensContainer">
-      <div class="empty">Yükleniyor...</div>
+      <div class="empty">{{loading}}</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-header">Benchmark Modelleri</div>
+    <div class="section-header">{{benchmark_models}}</div>
     <form class="add-form" id="addBenchmarkForm">
-      <input type="text" name="model" placeholder="model-adi (ör: minimaxai/minimax-m2.5)" required style="flex:1">
-      <button type="submit" class="btn-primary">Ekle</button>
+      <input type="text" name="model" placeholder="{{model_placeholder}}" required style="flex:1">
+      <button type="submit" class="btn-primary">{{add}}</button>
     </form>
     <div id="benchmarkModels">
-      <div class="empty">Yükleniyor...</div>
+      <div class="empty">{{loading}}</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-header">Kullanılabilir Modeller (NVIDIA NIM)</div>
+    <div class="section-header">{{available_models}}</div>
     <div id="modelList">
-      <div class="empty">Yükleniyor...</div>
+      <div class="empty">{{loading}}</div>
     </div>
   </div>
 
-  <div class="footer">Otomatik yenileme: 30s</div>
+  <div class="footer">{{auto_refresh}}</div>
 
   <script>
     const API_BASE = '/admin/api';
@@ -461,7 +462,7 @@
         headers: { 'Content-Type': 'application/json', ...opts.headers },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'API hatası');
+      if (!res.ok) throw new Error(data.error || '{{api_error}}');
       return data;
     }
 
@@ -501,14 +502,14 @@
         renderHourlyChart(stats.hourly);
         renderModelStats(stats.modelStats);
       } catch (err) {
-        console.error('İstatistikler yüklenemedi:', err);
+        alert('{{api_error}}');
       }
     }
 
     function renderHourlyChart(hourly) {
       const container = document.getElementById('hourlyChart');
       if (!hourly || hourly.length === 0) {
-        container.innerHTML = '<div class="empty">Henüz veri yok</div>';
+        container.innerHTML = '<div class="empty">{{no_data}}</div>';
         return;
       }
       const max = Math.max(...hourly.map(h => h.count), 1);
@@ -526,10 +527,10 @@
     function renderModelStats(models) {
       const container = document.getElementById('modelStats');
       if (!models || models.length === 0) {
-        container.innerHTML = '<div class="empty">Henüz veri yok</div>';
+        container.innerHTML = '<div class="empty">{{no_data}}</div>';
         return;
       }
-      container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Model</th><th>İstek</th></tr></thead><tbody>' +
+      container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>{{model}}</th><th>{{requests}}</th></tr></thead><tbody>' +
         models.map(m => `<tr><td>${escHtml(m.model || 'bilinmeyen')}</td><td>${formatNumber(m.count)}</td></tr>`).join('') +
         '</tbody></table></div>';
     }
@@ -539,34 +540,34 @@
         const keys = await apiFetch('/keys');
         const container = document.getElementById('keysContainer');
         if (keys.length === 0) {
-          container.innerHTML = '<div class="empty">Henüz API anahtarı eklenmedi</div>';
+          container.innerHTML = '<div class="empty">{{no_api_keys}}</div>';
           return;
         }
         container.innerHTML = `<div class="table-wrap"><table>
       <thead><tr>
-        <th>Etiket</th>
-        <th>Anahtar</th>
-        <th>Durum</th>
-        <th>İstek</th>
-        <th>Hata</th>
-        <th>Son Kullanım</th>
-        <th>İşlem</th>
+        <th>{{label}}</th>
+        <th>{{key_col}}</th>
+        <th>{{status}}</th>
+        <th>{{requests}}</th>
+        <th>{{errors_col}}</th>
+        <th>{{last_used}}</th>
+        <th>{{actions}}</th>
       </tr></thead>
       <tbody>${keys.map(k => `<tr>
         <td>${escHtml(k.label || '-')}</td>
         <td class="key-cell">${escHtml(k.key)}</td>
-        <td><span class="badge ${k.is_active ? 'badge-active' : 'badge-inactive'}">${k.is_active ? 'Aktif' : 'Pasif'}</span></td>
+        <td><span class="badge ${k.is_active ? 'badge-active' : 'badge-inactive'}">${k.is_active ? '{{active}}' : '{{inactive}}'}</span></td>
         <td>${formatNumber(k.request_count)}</td>
         <td>${k.error_count > 0 ? '<span class="error-rate">' + formatNumber(k.error_count) + '</span>' : '0'}</td>
         <td>${formatDate(k.last_used_at)}</td>
         <td class="actions">
-          <button class="btn-sm ${k.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleKey(${k.id}, ${!k.is_active})">${k.is_active ? 'Devre Dışı' : 'Etkinleştir'}</button>
-          <button class="btn-sm btn-danger" onclick="deleteKey(${k.id})">Sil</button>
+          <button class="btn-sm ${k.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleKey(${k.id}, ${!k.is_active})">${k.is_active ? '{{disable}}' : '{{enable}}'}</button>
+          <button class="btn-sm btn-danger" onclick="deleteKey(${k.id})">{{delete}}</button>
         </td>
       </tr>`).join('')}</tbody>
     </table></div>`;
       } catch (err) {
-        console.error('API anahtarları yüklenemedi:', err);
+        alert('{{api_error}}');
       }
     }
 
@@ -590,7 +591,7 @@
     }
 
     async function deleteKey(id) {
-      if (!confirm('Bu API anahtarını silmek istediğinizden emin misiniz?')) return;
+      if (!confirm('{{confirm_delete_key}}')) return;
       try {
         await apiFetch('/keys/' + id, { method: 'DELETE' });
         await refresh();
@@ -619,39 +620,39 @@
         const tokens = await apiFetch('/tokens');
         const container = document.getElementById('tokensContainer');
         if (tokens.length === 0) {
-          container.innerHTML = '<div class="empty">Henüz erişim anahtarı eklenmedi</div>';
+          container.innerHTML = '<div class="empty">{{no_access_keys}}</div>';
           return;
         }
         container.innerHTML = `<div class="table-wrap"><table>
       <thead><tr>
-        <th>Etiket</th>
-        <th>Token</th>
-        <th>Durum</th>
-        <th>İstek</th>
-        <th>Hata</th>
-        <th>Son Kullanım</th>
-        <th>İşlem</th>
+        <th>{{label}}</th>
+        <th>{{token_col}}</th>
+        <th>{{status}}</th>
+        <th>{{requests}}</th>
+        <th>{{errors_col}}</th>
+        <th>{{last_used}}</th>
+        <th>{{actions}}</th>
       </tr></thead>
       <tbody>${tokens.map(t => `<tr>
         <td class="editable" onclick="editToken(${t.id}, 'label', '${escAttr(t.label)}')">${escHtml(t.label || '-')}</td>
         <td class="key-cell editable" onclick="editToken(${t.id}, 'token', '${escAttr(t.token)}')">${escHtml(t.token)}</td>
-        <td><span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'}">${t.is_active ? 'Aktif' : 'Pasif'}</span></td>
+        <td><span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'}">${t.is_active ? '{{active}}' : '{{inactive}}'}</span></td>
         <td>${formatNumber(t.request_count)}</td>
         <td>${t.error_count > 0 ? '<span class="error-rate">' + formatNumber(t.error_count) + '</span>' : '0'}</td>
         <td>${formatDate(t.last_used_at)}</td>
         <td class="actions">
-          <button class="btn-sm ${t.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleToken(${t.id}, ${!t.is_active})">${t.is_active ? 'Devre Dışı' : 'Etkinleştir'}</button>
-          <button class="btn-sm btn-danger" onclick="deleteToken(${t.id})">Sil</button>
+          <button class="btn-sm ${t.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleToken(${t.id}, ${!t.is_active})">${t.is_active ? '{{disable}}' : '{{enable}}'}</button>
+          <button class="btn-sm btn-danger" onclick="deleteToken(${t.id})">{{delete}}</button>
         </td>
       </tr>`).join('')}</tbody>
     </table></div>`;
       } catch (err) {
-        console.error('Erişim anahtarı listesi yüklenemedi:', err);
+        alert('{{api_error}}');
       }
     }
 
     async function editToken(id, field, current) {
-      const prompts = { label: 'Yeni etiket:', token: 'Yeni token:' };
+      const prompts = { label: 'New label:', token: 'New token:' };
       const value = prompt(prompts[field], current);
       if (value === null || value.trim() === current) return;
       try {
@@ -672,7 +673,7 @@
     }
 
     async function deleteToken(id) {
-      if (!confirm('Bu erişim anahtarını silmek istediğinizden emin misiniz?')) return;
+      if (!confirm('{{confirm_delete_token}}')) return;
       try {
         await apiFetch('/tokens/' + id, { method: 'DELETE' });
         await refresh();
@@ -701,21 +702,21 @@
         const models = await apiFetch('/benchmarks');
         const container = document.getElementById('benchmarkModels');
         if (models.length === 0) {
-          container.innerHTML = '<div class="empty">Benchmark modeli eklenmemiş</div>';
+          container.innerHTML = '<div class="empty">{{no_bench_models}}</div>';
           return;
         }
-        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Model</th><th>Durum</th><th></th></tr></thead><tbody>' +
+        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>{{model}}</th><th>{{status}}</th><th></th></tr></thead><tbody>' +
           models.map(m => `<tr>
             <td class="key-cell">${escHtml(m.model)}</td>
-            <td><span class="badge ${m.is_active ? 'badge-active' : 'badge-inactive'}">${m.is_active ? 'Aktif' : 'Pasif'}</span></td>
+            <td><span class="badge ${m.is_active ? 'badge-active' : 'badge-inactive'}">${m.is_active ? '{{active}}' : '{{inactive}}'}</span></td>
             <td class="actions">
-              <button class="btn-sm ${m.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleBenchmark(${m.id},${!m.is_active})">${m.is_active ? 'Devre Dışı' : 'Etkinleştir'}</button>
-              <button class="btn-sm btn-danger" onclick="deleteBenchmark(${m.id})">Sil</button>
+              <button class="btn-sm ${m.is_active ? 'btn-danger' : 'btn-primary'}" onclick="toggleBenchmark(${m.id},${!m.is_active})">${m.is_active ? '{{disable}}' : '{{enable}}'}</button>
+              <button class="btn-sm btn-danger" onclick="deleteBenchmark(${m.id})">{{delete}}</button>
             </td>
           </tr>`).join('') +
           '</tbody></table></div>';
       } catch (err) {
-        console.error('Benchmark listesi yüklenemedi:', err);
+        alert('{{api_error}}');
       }
     }
 
@@ -725,7 +726,7 @@
     }
 
     async function deleteBenchmark(id) {
-      if (!confirm('Bu modeli benchmark listesinden silmek istediğinizden emin misiniz?')) return;
+      if (!confirm('{{confirm_delete_bench}}')) return;
       await apiFetch('/benchmarks/' + id, { method: 'DELETE' });
       await refresh();
     }
@@ -753,7 +754,7 @@
         }
         const container = document.getElementById('modelList');
         if (cachedModelList.length === 0) {
-          container.innerHTML = '<div class="empty">Model bulunamadı</div>';
+          container.innerHTML = '<div class="empty">{{no_models}}</div>';
           return;
         }
         const stats = await apiFetch('/stats');
@@ -768,13 +769,13 @@
           grouped[owner].push({ id: m.id, count: usageMap[m.id] || 0 });
         }
         const owners = Object.keys(grouped).sort();
-        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Sağlayıcı</th><th>Model</th><th>İstek</th></tr></thead><tbody>' +
+        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>{{provider}}</th><th>{{model}}</th><th>{{requests}}</th></tr></thead><tbody>' +
           owners.flatMap(owner => grouped[owner].map((m, i) =>
             `<tr><td>${i === 0 ? escHtml(owner) : ''}</td><td class="key-cell">${escHtml(m.id)}</td><td>${m.count > 0 ? formatNumber(m.count) : '-'}</td></tr>`
           )).join('') +
           '</tbody></table></div>';
       } catch (err) {
-        console.error('Model listesi yüklenemedi:', err);
+        alert('{{api_error}}');
       }
     }
 

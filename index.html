@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Anthronim</title>
   <meta name="description"
-    content="NVIDIA NIM modellerine Anthropic Messages API ile erişim sağlayan yüksek performanslı proxy sunucu.">
+    content="{{meta_desc}}">
   <meta name="author" content="KilimcininKorOglu">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#000000">
@@ -16,7 +16,7 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Anthronim">
   <meta property="og:description"
-    content="NVIDIA NIM modellerine Anthropic Messages API ile erişim sağlayan yüksek performanslı proxy sunucu.">
+    content="{{meta_desc}}">
   <meta property="og:url" content="https://nvidia.srv.hermestech.uk">
   <meta property="og:site_name" content="Anthronim">
   <meta property="og:locale" content="tr_TR">
@@ -25,7 +25,7 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Anthronim">
   <meta name="twitter:description"
-    content="NVIDIA NIM modellerine Anthropic Messages API ile erişim sağlayan yüksek performanslı proxy sunucu.">
+    content="{{meta_desc}}">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
@@ -60,6 +60,9 @@
     }
 
     .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
       margin-bottom: 48px;
       padding-bottom: 16px;
       border-bottom: 1px solid var(--border);
@@ -305,83 +308,83 @@
 <body>
 
   <div class="header">
-    <h1>Anthronim</h1>
-    <p>NVIDIA NIM uç noktasını Anthropic Messages API olarak sunan proxy</p>
+    <div><h1>Anthronim</h1><p>{{subtitle}}</p></div>
+    <div style="font-size:11px"><a href="/set-lang/tr">tr</a> · <a href="/set-lang/en">en</a></div>
   </div>
 
   <div class="access-box">
-    <p>Bu proxy'ye erişim anahtarı gereklidir.</p>
+    <p>{{access_required}}</p>
     <!-- REGISTRATION_START -->
     <div id="regStep1">
-      <p>Erişim anahtarı almak için e-posta adresinizi girin:</p>
+      <p>{{register_prompt}}</p>
       <div class="reg-form">
-        <input type="email" id="regEmail" placeholder="örnek@mail.com" autocomplete="email">
-        <button id="regBtn" onclick="handleRegister()">kayıt ol</button>
+        <input type="email" id="regEmail" placeholder="{{email_placeholder}}" autocomplete="email">
+        <button id="regBtn" onclick="handleRegister()">{{signup}}</button>
       </div>
     </div>
     <div id="regStep2" style="display:none">
-      <p>Doğrulama kodu e-posta adresinize gönderildi:</p>
+      <p>{{code_sent}}</p>
       <div class="reg-form">
-        <input type="text" id="regCode" placeholder="6 haneli kod" maxlength="6" inputmode="numeric"
+        <input type="text" id="regCode" placeholder="{{code_placeholder}}" maxlength="6" inputmode="numeric"
           autocomplete="one-time-code">
-        <button id="verifyBtn" onclick="handleVerify()">doğrula</button>
+        <button id="verifyBtn" onclick="handleVerify()">{{verify}}</button>
       </div>
     </div>
     <div id="regStep3" style="display:none">
-      <p>Erişim anahtarınız oluşturuldu. Kopyalamak için tıklayın:</p>
+      <p>{{token_created}}</p>
       <div class="token-display" id="tokenDisplay" onclick="copyToken()"></div>
-      <div class="reg-msg success" id="copyMsg" style="display:none">Kopyalandı</div>
+      <div class="reg-msg success" id="copyMsg" style="display:none">{{copied}}</div>
     </div>
     <div class="reg-msg" id="regMsg"></div>
     <!-- REGISTRATION_END -->
   </div>
 
   <div class="section">
-    <div class="section-header">İstatistikler</div>
+    <div class="section-header">{{stats_header}}</div>
     <div id="statsContainer">
-      <div class="empty">Yükleniyor...</div>
+      <div class="empty">{{loading}}</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-header">Model Yanıt Süreleri</div>
+    <div class="section-header">{{benchmark_header}}</div>
     <div id="benchmarkResults">
-      <div class="empty">Yükleniyor...</div>
+      <div class="empty">{{loading}}</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-header">Claude Code Yapılandırması</div>
-    <p class="config-note" style="margin-bottom:12px">Tek komutla yapılandırın (önerilen):</p>
-    <pre><code>npx runcodingplan --add-custom --name "Anthronim" --url "<span id="baseUrlRcp"></span>" -a &lt;erişim anahtarınız&gt; -m minimaxai/minimax-m2.5</code></pre>
-    <p class="config-note" style="margin-top:8px">Başlatmak için:</p>
+    <div class="section-header">{{config_header}}</div>
+    <p class="config-note" style="margin-bottom:12px">{{config_single}}</p>
+    <pre><code>npx runcodingplan --add-custom --name "Anthronim" --url "<span id="baseUrlRcp"></span>" -a {{your_key}} -m minimaxai/minimax-m2.5</code></pre>
+    <p class="config-note" style="margin-top:8px">{{config_start}}</p>
     <pre><code>npx runcodingplan -p anthronim</code></pre>
-    <p class="config-note" style="margin-top:8px">Diğer modelleri eklemek için:</p>
+    <p class="config-note" style="margin-top:8px">{{config_add_model}}</p>
     <pre><code>npx runcodingplan -p anthronim --add-model minimaxai/minimax-m2.7</code></pre>
     <p class="config-note" style="margin-top:4px">Detaylar: <a href="https://github.com/ersinkoc/RunCodingPlan"
         target="_blank" rel="noopener">github.com/ersinkoc/RunCodingPlan</a></p>
-    <p class="config-note" style="margin-top:16px;margin-bottom:12px">Alternatif olarak
-      <code>~/.claude/settings.json</code> dosyasını düzenleyin:
+    <p class="config-note" style="margin-top:16px;margin-bottom:12px">{{config_alt}}
+      <code>~/.claude/settings.json</code>{{config_edit}}
     </p>
     <pre><code>{
   "env": {
     "ANTHROPIC_BASE_URL": "<span id="baseUrl"></span>",
-    "ANTHROPIC_API_KEY": "&lt;erişim anahtarınız&gt;",
+    "ANTHROPIC_API_KEY": "{{your_key}}",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "minimaxai/minimax-m2.7",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimaxai/minimax-m2.5",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "z-ai/glm5"
   }
 }</code></pre>
-    <p class="config-note">Oturum içinde model değiştirmek için: <code>/model opus</code>, <code>/model sonnet</code>,
+    <p class="config-note">{{config_switch}} <code>/model opus</code>, <code>/model sonnet</code>,
       <code>/model haiku</code>
     </p>
   </div>
 
   <div class="section">
-    <div class="section-header">Kullanılabilir Modeller</div>
+    <div class="section-header">{{models_header}}</div>
     <div class="model-count" id="modelCount"></div>
     <div id="modelList">
-      <div class="empty">Yükleniyor...</div>
+      <div class="empty">{{loading}}</div>
     </div>
   </div>
 
@@ -398,11 +401,11 @@
         const countEl = document.getElementById('modelCount');
 
         if (models.length === 0) {
-          container.innerHTML = '<div class="empty">Model bulunamadı</div>';
+          container.innerHTML = '<div class="empty">{{no_models}}</div>';
           return;
         }
 
-        countEl.textContent = models.length + ' model';
+        countEl.textContent = models.length + ' {{models_count_suffix}}';
 
         const grouped = {};
         for (const m of models) {
@@ -411,13 +414,13 @@
           grouped[owner].push(m.id);
         }
         const owners = Object.keys(grouped).sort();
-        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Sağlayıcı</th><th>Model</th></tr></thead><tbody>' +
+        container.innerHTML = '<div class="table-wrap"><table><thead><tr><th>{{provider}}</th><th>{{model}}</th></tr></thead><tbody>' +
           owners.flatMap(owner => grouped[owner].map((id, i) =>
             `<tr><td>${i === 0 ? escHtml(owner) + ' (' + grouped[owner].length + ')' : ''}</td><td>${escHtml(id)}</td></tr>`
           )).join('') +
           '</tbody></table></div>';
       } catch (err) {
-        document.getElementById('modelList').innerHTML = '<div class="empty">Model listesi yüklenemedi</div>';
+        document.getElementById('modelList').innerHTML = '<div class="empty">{{models_load_fail}}</div>';
       }
     }
 
@@ -454,18 +457,18 @@
 
         container.innerHTML = `
           <div class="stats-grid">
-            <div class="stat-card"><div class="value">${formatNum(s.totalRequests)}</div><div class="label">Toplam İstek</div></div>
-            <div class="stat-card"><div class="value">${formatNum(s.todayRequests)}</div><div class="label">Bugün</div></div>
-            <div class="stat-card"><div class="value">${s.activeUsers}</div><div class="label">Aktif Kullanıcı</div></div>
+            <div class="stat-card"><div class="value">${formatNum(s.totalRequests)}</div><div class="label">{{total_requests}}</div></div>
+            <div class="stat-card"><div class="value">${formatNum(s.todayRequests)}</div><div class="label">{{today}}</div></div>
+            <div class="stat-card"><div class="value">${s.activeUsers}</div><div class="label">{{active_users}}</div></div>
           </div>
           ${s.hourly.length > 0 ? `
             <div style="margin-bottom:24px">
               <div class="chart-bar">${bars}</div>
-              <div class="chart-labels"><span>${firstHour}</span><span>Son 24 saat</span><span>${lastHour}</span></div>
+              <div class="chart-labels"><span>${firstHour}</span><span>{{last_24h}}</span><span>${lastHour}</span></div>
             </div>` : ''}
           ${topModels ? `
             <div class="table-wrap"><table>
-              <thead><tr><th>En Çok Kullanılan Modeller</th><th>İstek</th></tr></thead>
+              <thead><tr><th>{{most_used}}</th><th>{{requests}}</th></tr></thead>
               <tbody>${topModels}</tbody>
             </table></div>` : ''}`;
         const benchmarks = (s.benchmarks || []).filter(b => !b.error);
@@ -480,20 +483,16 @@
           </tr>`).join('');
           benchContainer.innerHTML = `
             <div class="table-wrap"><table>
-              <thead><tr><th>Model</th><th>Kısa TTFB</th><th>Kısa Toplam</th><th>Uzun TTFB</th><th>Uzun Toplam</th></tr></thead>
+              <thead><tr><th>{{model}}</th><th>{{short_ttfb}}</th><th>{{short_total}}</th><th>{{long_ttfb}}</th><th>{{long_total}}</th></tr></thead>
               <tbody>${benchRows}</tbody>
             </table></div>
-            <p class="config-note">Her saat başı güncellenir. TTFB = ilk yanıt süresi, Toplam = tam yanıt süresi.</p>
-            <p class="config-note" style="margin-top:8px"><strong>Metodoloji:</strong> Her model için iki ayrı streaming istek gönderilir.
-              Kısa prompt: tek kelimelik yanıt (max 100 token).
-              Uzun prompt: Python binary search tree implementasyonu (max 2048 token).
-              TTFB, sunucudan gelen ilk byte'ın alınma süresini; Toplam ise yanıtın tamamen tamamlanma süresini ölçer.
-              Ölçümler NVIDIA NIM API üzerinden yapılır, proxy overhead dahildir.</p>`;
+            <p class="config-note">{{bench_update}}</p>
+            <p class="config-note" style="margin-top:8px"><strong>{{bench_method}}</strong> {{bench_method_desc}}</p>`;
         } else {
-          benchContainer.innerHTML = '<div class="empty">Benchmark verisi henüz yok</div>';
+          benchContainer.innerHTML = '<div class="empty">{{no_bench}}</div>';
         }
       } catch (err) {
-        document.getElementById('statsContainer').innerHTML = '<div class="empty">İstatistikler yüklenemedi</div>';
+        document.getElementById('statsContainer').innerHTML = '<div class="empty">{{stats_load_fail}}</div>';
       }
     }
 
@@ -519,7 +518,7 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          showMsg(data.error?.message || 'Bir hata oluştu', true);
+          showMsg(data.error?.message || '{{error_occurred}}', true);
           btn.disabled = false;
           return;
         }
@@ -529,7 +528,7 @@
         showMsg(data.message, false);
         document.getElementById('regCode').focus();
       } catch {
-        showMsg('Bağlantı hatası', true);
+        showMsg('{{connection_error}}', true);
         btn.disabled = false;
       }
     }
@@ -548,7 +547,7 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          showMsg(data.error?.message || 'Bir hata oluştu', true);
+          showMsg(data.error?.message || '{{error_occurred}}', true);
           btn.disabled = false;
           return;
         }
@@ -557,7 +556,7 @@
         document.getElementById('regStep3').style.display = 'block';
         document.getElementById('tokenDisplay').textContent = data.token;
       } catch {
-        showMsg('Bağlantı hatası', true);
+        showMsg('{{connection_error}}', true);
         btn.disabled = false;
       }
     }

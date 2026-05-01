@@ -3,6 +3,7 @@ import { timingSafeEqual, createHmac, randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, updateToken, listTokens, listBenchmarkModels, addBenchmarkModel, removeBenchmarkModel, toggleBenchmarkModel } from './db.js';
+import { renderTemplate, getLang } from './lang.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -26,7 +27,7 @@ export const LOCKOUT_MS = parseInt(process.env.LOCKOUT_MINUTES || '15', 10) * 60
 
 const JWT_SECRET = process.env.ADMIN_JWT_SECRET || randomBytes(32).toString('hex');
 const JWT_EXPIRY_SEC = parseInt(process.env.ADMIN_JWT_HOURS || '168', 10) * 3600;
-if (!process.env.ADMIN_JWT_SECRET) console.warn('ADMIN_JWT_SECRET ayarlanmadı — her restart oturumları geçersiz kılar');
+if (!process.env.ADMIN_JWT_SECRET) console.warn('ADMIN_JWT_SECRET not set — sessions invalidated on every restart');
 
 function base64url(buf) { return (Buffer.isBuffer(buf) ? buf : Buffer.from(buf)).toString('base64url'); }
 
@@ -64,24 +65,13 @@ setInterval(() => {
   }
 }, parseInt(process.env.LOCKOUT_CLEANUP_MINUTES || '5', 10) * 60 * 1000);
 
-let cachedHtml = null;
-let cachedLogsHtml = null;
-
-function loadHtml() {
-  if (!cachedHtml) {
-    const raw = fs.readFileSync(join(__dirname, 'admin.html'), 'utf8');
-    cachedHtml = ADMIN_PATH === '/admin' ? raw : raw.replaceAll('/admin', ADMIN_PATH);
-  }
-  return cachedHtml;
+function preRender(filePath) {
+  let raw = fs.readFileSync(join(__dirname, filePath), 'utf8');
+  if (ADMIN_PATH !== '/admin') raw = raw.replaceAll('/admin', ADMIN_PATH);
+  return { tr: renderTemplate(raw, 'tr'), en: renderTemplate(raw, 'en') };
 }
-
-function loadLogsHtml() {
-  if (!cachedLogsHtml) {
-    const raw = fs.readFileSync(join(__dirname, 'logs.html'), 'utf8');
-    cachedLogsHtml = ADMIN_PATH === '/admin' ? raw : raw.replaceAll('/admin', ADMIN_PATH);
-  }
-  return cachedLogsHtml;
-}
+const adminHtml = preRender('admin.html');
+const logsHtml = preRender('logs.html');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
@@ -200,10 +190,10 @@ async function readFormBody(req) {
   return Object.fromEntries(new URLSearchParams(Buffer.concat(chunks).toString('utf8')));
 }
 
-const LOGIN_HTML = `<!DOCTYPE html>
+const LOGIN_HTML_RAW = `<!DOCTYPE html>
 <html lang="tr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>Anthronim // Giriş</title>
+<meta name="robots" content="noindex,nofollow"><title>{{login_title}}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -218,19 +208,24 @@ button{width:100%;background:#002a0a;border:1px solid #006b1d;color:#00ff41;padd
 .error{color:#ff2d2d;font-size:11px;margin-bottom:16px}
 </style></head><body>
 <div class="login">
-<h1>anthronim // giriş</h1>
+<h1>{{login_heading}}</h1>
 <div class="error" id="err"></div>
 <form method="POST" action="/admin/login">
-<div class="field"><label>kullanıcı adı</label><input name="username" autocomplete="username" required autofocus></div>
-<div class="field"><label>şifre</label><input name="password" type="password" autocomplete="current-password" required></div>
-<button type="submit">giriş yap</button>
+<div class="field"><label>{{username}}</label><input name="username" autocomplete="username" required autofocus></div>
+<div class="field"><label>{{password}}</label><input name="password" type="password" autocomplete="current-password" required></div>
+<button type="submit">{{login_btn}}</button>
 </form></div>
 <script>
 const p=new URLSearchParams(location.search);
 const e=document.getElementById('err');
-if(p.get('error')==='invalid')e.textContent='Geçersiz kullanıcı adı veya şifre.';
-if(p.get('error')==='lockout')e.textContent='Çok fazla başarısız deneme. Lütfen bekleyin.';
+if(p.get('error')==='invalid')e.textContent='{{login_invalid}}';
+if(p.get('error')==='lockout')e.textContent='{{login_lockout}}';
 </script></body></html>`;
+function preRenderLogin() {
+  let raw = ADMIN_PATH === '/admin' ? LOGIN_HTML_RAW : LOGIN_HTML_RAW.replaceAll('/admin/login', ADMIN_PATH + '/login');
+  return { tr: renderTemplate(raw, 'tr'), en: renderTemplate(raw, 'en') };
+}
+const loginHtml = preRenderLogin();
 
 export async function handleAdmin(req, res, pathname) {
   if (!adminEnabled) {
@@ -241,9 +236,9 @@ export async function handleAdmin(req, res, pathname) {
   const sub = pathname.slice(ADMIN_PATH.length);
 
   if (sub === '/login' && req.method === 'GET') {
-    const html = LOGIN_HTML.replaceAll('/admin/login', ADMIN_PATH + '/login');
+    const lang = getLang(req);
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Cache-Control': 'no-store' });
-    res.end(html);
+    res.end(loginHtml[lang]);
     return;
   }
 
@@ -295,17 +290,17 @@ export async function handleAdmin(req, res, pathname) {
 
   // GET /admin — Dashboard HTML
   if (sub === '' && req.method === 'GET') {
-    const html = loadHtml();
+    const lang = getLang(req);
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'", 'Cache-Control': 'no-store' });
-    res.end(html);
+    res.end(adminHtml[lang]);
     return;
   }
 
   // GET /admin/logs — Logs HTML
   if (sub === '/logs' && req.method === 'GET') {
-    const html = loadLogsHtml();
+    const lang = getLang(req);
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'", 'Cache-Control': 'no-store' });
-    res.end(html);
+    res.end(logsHtml[lang]);
     return;
   }
 

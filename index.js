@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats, listBenchmarkModels, upsertBenchmark, addToken, addRegistration, findRegistration, incrementRegistrationAttempts, deleteRegistration, cleanupExpiredRegistrations, hasRecentRegistration, deactivateTokenByEmail, hashToken, invalidateTokenCache } from './db.js';
 import { handleAdmin, ADMIN_PATH, getClientIp } from './admin.js';
+import { renderTemplate, getLang, translations } from './lang.js';
 
 loadDotEnv();
 initDb();
@@ -20,7 +21,7 @@ const API_BASE = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.co
 const BENCH_SHORT_PROMPT = 'Say hi in one word.';
 const BENCH_LONG_PROMPT = 'Write a Python binary search tree implementation with insert, delete, search, and traversal. Include docstrings.';
 const BENCH_INTERVAL = parseInt(process.env.BENCH_INTERVAL_MINUTES || '60', 10) * 60 * 1000;
-let indexHtml = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
+let indexHtmlRaw = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
@@ -33,8 +34,9 @@ const REG_IP_WINDOW_MS = parseInt(process.env.REG_IP_WINDOW_MINUTES || '60', 10)
 const regIpCounter = new Map();
 
 if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
-  indexHtml = indexHtml.replace(/<!-- REGISTRATION_START -->[\s\S]*?<!-- REGISTRATION_END -->/, '<p>Erişim anahtarı almak için yönetici ile iletişime geçin.</p>');
+  indexHtmlRaw = indexHtmlRaw.replace(/<!-- REGISTRATION_START -->[\s\S]*?<!-- REGISTRATION_END -->/, '<p>{{no_brevo}}</p>');
 }
+const indexHtml = { tr: renderTemplate(indexHtmlRaw, 'tr'), en: renderTemplate(indexHtmlRaw, 'en') };
 
 const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
 let modelCache = null;
@@ -78,13 +80,22 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     }
 
     if (pathname === '/') {
+      const lang = getLang(req);
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'", 'Cache-Control': 'no-store' });
-      res.end(indexHtml);
+      res.end(indexHtml[lang]);
       return;
     }
     if (pathname === '/health') {
       sendJson(res, 200, { status: 'ok' });
       return;
+    }
+    if (pathname.startsWith('/set-lang/')) {
+      const lang = pathname.split('/')[2];
+      if (lang === 'tr' || lang === 'en') {
+        res.writeHead(302, { 'Location': req.headers.referer || '/', 'Set-Cookie': `lang=${lang}; Path=/; Max-Age=31536000; SameSite=Lax` });
+        res.end();
+        return;
+      }
     }
     if (pathname === '/v1/models' && req.method === 'GET') {
       sendJson(res, 200, await getModels());
@@ -141,7 +152,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19);
       const regId = addRegistration(email, hashToken(code), expiresAt);
       try {
-        await sendVerificationEmail(email, code);
+        await sendVerificationEmail(email, code, getLang(req));
       } catch (err) {
         deleteRegistration(regId);
         console.error('Email send failed:', err.message);
@@ -296,7 +307,8 @@ function generateAuthToken() {
   return 'hermes-' + crypto.randomBytes(32).toString('hex');
 }
 
-async function sendVerificationEmail(email, code) {
+async function sendVerificationEmail(email, code, lang) {
+  const t = translations[lang] || translations.en;
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
@@ -307,8 +319,8 @@ async function sendVerificationEmail(email, code) {
     body: JSON.stringify({
       sender: { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
       to: [{ email }],
-      subject: 'Anthronim - Doğrulama Kodu',
-      textContent: `Doğrulama kodunuz: ${code}\n\nBu kod 10 dakika geçerlidir.`,
+      subject: t.email_subject,
+      textContent: t.email_body.replace('{{CODE}}', code),
     }),
   });
   if (!res.ok) throw new Error(`Brevo API error: ${res.status}`);
