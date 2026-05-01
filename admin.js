@@ -73,7 +73,7 @@ function preRender(filePath) {
 const adminHtml = preRender('admin.html');
 const logsHtml = preRender('logs.html');
 
-const JSON_HEADERS = { 'Content-Type': 'application/json' };
+const JSON_HEADERS = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 
 function sendJson(res, status, data) {
   res.writeHead(status, JSON_HEADERS);

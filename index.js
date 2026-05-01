@@ -37,6 +37,10 @@ if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
   indexHtmlRaw = indexHtmlRaw.replace(/<!-- REGISTRATION_START -->[\s\S]*?<!-- REGISTRATION_END -->/, '<p>{{no_brevo}}</p>');
 }
 const indexHtml = { tr: renderTemplate(indexHtmlRaw, 'tr'), en: renderTemplate(indexHtmlRaw, 'en') };
+const indexEtag = {
+  tr: W(indexHtml.tr),
+  en: W(indexHtml.en),
+};
 
 const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
 let modelCache = null;
@@ -81,12 +85,20 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
 
     if (pathname === '/') {
       const lang = getLang(req);
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'", 'Cache-Control': 'no-store' });
+      const etag = indexEtag[lang];
+      const headers = { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'", 'Cache-Control': 'public, max-age=300', 'ETag': etag, 'Vary': 'Cookie' };
+      if (matchETag(req.headers['if-none-match'], etag)) {
+        res.writeHead(304, headers);
+        res.end();
+        return;
+      }
+      res.writeHead(200, headers);
       res.end(indexHtml[lang]);
       return;
     }
     if (pathname === '/health') {
-      sendJson(res, 200, { status: 'ok' });
+      res.writeHead(200, { ...JSON_HEADERS, 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ status: 'ok' }));
       return;
     }
     if (pathname.startsWith('/set-lang/')) {
@@ -98,7 +110,15 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       }
     }
     if (pathname === '/v1/models' && req.method === 'GET') {
-      sendJson(res, 200, await getModels());
+      const data = await getModels();
+      const etag = W(data);
+      if (matchETag(req.headers['if-none-match'], etag)) {
+        res.writeHead(304, { ...JSON_HEADERS, 'Cache-Control': 'public, max-age=300', 'ETag': etag });
+        res.end();
+        return;
+      }
+      res.writeHead(200, { ...JSON_HEADERS, 'Cache-Control': 'public, max-age=300', 'ETag': etag });
+      res.end(JSON.stringify(data));
       return;
     }
     if (pathname.startsWith('/v1/models/') && req.method === 'GET') {
@@ -114,7 +134,8 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     }
 
     if (pathname === '/stats' && req.method === 'GET') {
-      sendJson(res, 200, getPublicStats());
+      res.writeHead(200, { ...JSON_HEADERS, 'Cache-Control': 'public, max-age=30' });
+      res.end(JSON.stringify(getPublicStats()));
       return;
     }
 
@@ -327,6 +348,17 @@ async function sendVerificationEmail(email, code, lang) {
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function W(data) {
+  return 'W/"' + crypto.createHash('sha256').update(typeof data === 'string' ? data : JSON.stringify(data)).digest('hex').slice(0, 16) + '"';
+}
+
+function matchETag(header, etag) {
+  if (!header) return false;
+  if (header.trim() === '*') return true;
+  const strip = s => s.trim().replace(/^W\//, '');
+  return header.split(',').some(t => strip(t) === strip(etag));
+}
 
 function sendJson(res, status, data) {
   res.writeHead(status, JSON_HEADERS);
