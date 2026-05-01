@@ -234,7 +234,7 @@ if(p.get('error')==='lockout')e.textContent='Çok fazla başarısız deneme. Lü
 
 export async function handleAdmin(req, res, pathname) {
   if (!adminEnabled) {
-    sendJson(res, 404, { error: { type: 'not_found', message: 'Bulunamadı' } });
+    sendJson(res, 404, { error: { type: 'not_found', message: '[Proxy] Not found' } });
     return;
   }
 
@@ -529,5 +529,5 @@ export async function handleAdmin(req, res, pathname) {
     return;
   }
 
-  sendJson(res, 404, { error: { type: 'not_found', message: 'Bulunamadı' } });
+  sendJson(res, 404, { error: { type: 'not_found', message: '[Proxy] Not found' } });
 }

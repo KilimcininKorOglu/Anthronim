@@ -97,7 +97,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       if (model) {
         sendJson(res, 200, model);
       } else {
-        sendJson(res, 404, { error: { type: 'not_found', message: 'Model bulunamadı' } });
+        sendJson(res, 404, { error: { type: 'not_found', message: '[Proxy] Model not found' } });
       }
       return;
     }
@@ -109,7 +109,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
 
     if ((pathname === '/register' || pathname === '/verify') && req.method === 'POST') {
       if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
-        sendJson(res, 404, { error: { type: 'not_found', message: 'Kayıt sistemi aktif değil' } });
+        sendJson(res, 404, { error: { type: 'not_found', message: '[Proxy] Registration system is not active' } });
         return;
       }
       const ip = getClientIp(req);
@@ -117,7 +117,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       const ipRecord = regIpCounter.get(ip);
       if (ipRecord && now < ipRecord.resetAt) {
         if (ipRecord.count >= REG_MAX_PER_IP) {
-          sendJson(res, 429, { error: { type: 'rate_limit_error', message: 'Çok fazla istek. Lütfen daha sonra tekrar deneyin.' } });
+          sendJson(res, 429, { error: { type: 'rate_limit_error', message: '[Proxy] Too many requests. Please try again later.' } });
           return;
         }
         ipRecord.count++;
@@ -130,11 +130,11 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       const body = await readJsonBody(req);
       const email = (body.email || '').trim().toLowerCase();
       if (!email || !EMAIL_REGEX.test(email)) {
-        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'Geçerli bir e-posta adresi gerekli' } });
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] A valid email address is required' } });
         return;
       }
       if (hasRecentRegistration(email)) {
-        sendJson(res, 429, { error: { type: 'rate_limit_error', message: 'Bu e-posta için zaten bir doğrulama kodu gönderildi. Lütfen 5 dakika bekleyin.' } });
+        sendJson(res, 429, { error: { type: 'rate_limit_error', message: '[Proxy] A verification code has already been sent to this email. Please wait 5 minutes.' } });
         return;
       }
       const code = generateVerificationCode();
@@ -144,11 +144,11 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
         await sendVerificationEmail(email, code);
       } catch (err) {
         deleteRegistration(regId);
-        console.error('E-posta gönderimi başarısız:', err.message);
-        sendJson(res, 500, { error: { type: 'api_error', message: 'Doğrulama e-postası gönderilemedi' } });
+        console.error('Email send failed:', err.message);
+        sendJson(res, 500, { error: { type: 'api_error', message: '[Proxy] Failed to send verification email' } });
         return;
       }
-      sendJson(res, 200, { message: 'Doğrulama kodu gönderildi' });
+      sendJson(res, 200, { message: 'Verification code sent' });
       return;
     }
 
@@ -157,21 +157,21 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       const email = (body.email || '').trim().toLowerCase();
       const code = (body.code || '').trim();
       if (!email || !code) {
-        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'E-posta ve doğrulama kodu gerekli' } });
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] Email and verification code are required' } });
         return;
       }
       const reg = findRegistration(email);
       if (!reg) {
-        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'Geçerli bir kayıt bulunamadı. Lütfen tekrar kayıt olun.' } });
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] No active registration found. Please register again.' } });
         return;
       }
       if (reg.attempts >= 3) {
-        sendJson(res, 429, { error: { type: 'rate_limit_error', message: 'Deneme limiti aşıldı. Lütfen 5 dakika bekleyip tekrar kayıt olun.' } });
+        sendJson(res, 429, { error: { type: 'rate_limit_error', message: '[Proxy] Attempt limit exceeded. Please wait 5 minutes and register again.' } });
         return;
       }
       if (hashToken(code) !== reg.code) {
         incrementRegistrationAttempts(reg.id);
-        sendJson(res, 400, { error: { type: 'invalid_request_error', message: `Geçersiz doğrulama kodu. ${2 - reg.attempts} deneme hakkınız kaldı.` } });
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: `[Proxy] Invalid verification code. ${2 - reg.attempts} attempts remaining.` } });
         return;
       }
       deactivateTokenByEmail(email);
@@ -179,7 +179,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       addToken(token, email);
       invalidateTokenCache();
       deleteRegistration(reg.id);
-      sendJson(res, 200, { token, message: 'Erişim anahtarınız oluşturuldu' });
+      sendJson(res, 200, { token, message: 'Access token created' });
       return;
     }
 
@@ -193,12 +193,12 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       const bearer = req.headers['authorization']?.replace(/^Bearer\s+/i, '');
       const auth = req.headers['x-api-key'] || bearer;
       if (!auth) {
-        sendJson(res, 401, { error: { type: 'authentication_error', message: 'Geçersiz erişim anahtarı' } });
+        sendJson(res, 401, { error: { type: 'authentication_error', message: '[Proxy] Invalid access token' } });
         return;
       }
       const result = validateToken(auth, AUTH_TOKEN_ENV);
       if (!result.valid) {
-        sendJson(res, 401, { error: { type: 'authentication_error', message: 'Geçersiz erişim anahtarı' } });
+        sendJson(res, 401, { error: { type: 'authentication_error', message: '[Proxy] Invalid access token' } });
         return;
       }
       authTokenId = result.id;
@@ -209,16 +209,16 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       return;
     }
 
-    sendJson(res, 404, { error: { type: 'not_found', message: 'Bulunamadı' } });
+    sendJson(res, 404, { error: { type: 'not_found', message: '[Proxy] Not found' } });
   } catch (err) {
     if (!res.headersSent) {
       if (err.statusCode === 413) {
-        sendJson(res, 413, { error: { type: 'invalid_request_error', message: 'İstek gövdesi çok büyük' } });
+        sendJson(res, 413, { error: { type: 'invalid_request_error', message: '[Proxy] Request body too large' } });
       } else if (err instanceof SyntaxError) {
-        sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'Geçersiz JSON gövdesi' } });
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] Invalid JSON body' } });
       } else {
-        console.error('İstek işleme hatası:', err.message || err);
-        sendJson(res, 500, { error: { type: 'internal_error', message: 'Sunucu hatası' } });
+        console.error('Request processing error:', err.message || err);
+        sendJson(res, 500, { error: { type: 'internal_error', message: '[Proxy] Internal server error' } });
       }
     } else {
       res.end();
@@ -461,7 +461,7 @@ async function handleMessages(req, res, authTokenId) {
   const body = await readJsonBody(req);
 
   if (!body.messages || !Array.isArray(body.messages)) {
-    sendJson(res, 400, { error: { type: 'invalid_request_error', message: 'messages alanı zorunlu' } });
+    sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] messages field is required' } });
     return;
   }
 
@@ -514,7 +514,7 @@ async function handleMessages(req, res, authTokenId) {
 
   const keyEntry = getNextKey(NVIDIA_API_KEY);
   if (!keyEntry) {
-    sendJson(res, 503, { error: { type: 'service_error', message: 'Kullanılabilir API anahtarı yok' } });
+    sendJson(res, 503, { error: { type: 'service_error', message: '[Proxy] No available API key' } });
     return;
   }
 
@@ -551,12 +551,12 @@ async function handleMessages(req, res, authTokenId) {
     }
     // Non-multimodal model received image
     if (upstream.status === 400 && lower.includes('not a multimodal model')) {
-      sendJson(res, 400, { error: { type: 'invalid_request_error', message: `${body.model} görsel desteklememektedir` } });
+      sendJson(res, 400, { error: { type: 'invalid_request_error', message: `[NVIDIA] ${body.model} does not support image input` } });
       return;
     }
     // Model not found on NVIDIA
     if (upstream.status === 404) {
-      sendJson(res, 404, { error: { type: 'not_found', message: `${body.model} NVIDIA sisteminde bulunmamaktadır` } });
+      sendJson(res, 404, { error: { type: 'not_found', message: `[NVIDIA] ${body.model} is not available on NVIDIA NIM` } });
       return;
     }
     // Rate limit → retry once with a different key, then overloaded_error
@@ -593,10 +593,10 @@ async function handleMessages(req, res, authTokenId) {
       const headers = { ...JSON_HEADERS };
       if (retryAfter) headers['Retry-After'] = retryAfter;
       res.writeHead(529, headers);
-      res.end(JSON.stringify({ error: { type: 'overloaded_error', message: 'NVIDIA API hız sınırına ulaşıldı' } }));
+      res.end(JSON.stringify({ error: { type: 'overloaded_error', message: '[NVIDIA] Rate limit reached' } }));
       return;
     }
-    sendJson(res, upstream.status, { error: { type: 'api_error', message: 'Upstream API hatası' } });
+    sendJson(res, upstream.status, { error: { type: 'api_error', message: '[NVIDIA] Upstream API error' } });
     return;
   }
 
