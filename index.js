@@ -46,6 +46,10 @@ const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
 let modelCache = null;
 let modelCacheTime = 0;
 
+const ROBOTS_TXT = `User-agent: *\nAllow: /\nSitemap: https://nvidia.srv.hermestech.uk/sitemap.xml\n`;
+const SITEMAP_XML = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://nvidia.srv.hermestech.uk/</loc><changefreq>daily</changefreq></url>\n</urlset>`;
+const LLMS_TXT = `# Anthronim\n\n> High-performance proxy server providing access to NVIDIA NIM models via the Anthropic Messages API.\n\n## What It Does\n\nAnthronim translates Anthropic Messages API requests into NVIDIA NIM OpenAI-compatible format. Clients like Claude Code can use NVIDIA-hosted open-source models (Llama, Mistral, Gemma, Qwen, DeepSeek, etc.) through this proxy.\n\n## API Endpoint\n\n- POST /v1/messages — Anthropic Messages API (streaming + non-streaming)\n- GET /v1/models — List available NVIDIA NIM models\n- GET /stats — Public usage statistics and benchmarks\n- POST /register — Self-service email registration for access tokens\n- POST /verify — Email verification to receive access token\n\n## Key Facts\n\n- Runtime: Node.js 20+\n- Dependency: better-sqlite3 (single dependency)\n- Auth: Bearer token or x-api-key header\n- Streaming: SSE (Server-Sent Events)\n- Models: 130+ NVIDIA NIM models including vision-capable ones\n- Source: https://github.com/KilimcininKorOglu/Anthronim\n- License: Open source\n`;
+
 if (!NVIDIA_API_KEY && !hasKeys()) {
   console.error('Hata: NVIDIA_API_KEY ortam değişkeni ayarlanmamış ve veritabanında API anahtarı yok.');
   process.exit(1);
@@ -99,6 +103,21 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     if (pathname === '/health') {
       res.writeHead(200, { ...JSON_HEADERS, 'Cache-Control': 'no-store' });
       res.end(JSON.stringify({ status: 'ok' }));
+      return;
+    }
+    if (pathname === '/robots.txt') {
+      res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'public, max-age=86400' });
+      res.end(ROBOTS_TXT);
+      return;
+    }
+    if (pathname === '/llms.txt') {
+      res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'public, max-age=3600' });
+      res.end(LLMS_TXT);
+      return;
+    }
+    if (pathname === '/sitemap.xml') {
+      res.writeHead(200, { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=86400' });
+      res.end(SITEMAP_XML);
       return;
     }
     if (pathname.startsWith('/set-lang/')) {
