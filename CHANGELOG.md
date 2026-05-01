@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.0] - 2026-05-01
+
+### Added
+- Multi-language support (TR/EN) with backend template rendering (`lang.js`, 112 translation keys)
+- Language detection: cookie → Accept-Language → EN default, `/set-lang` endpoint
+- `robots.txt`, `llms.txt`, `sitemap.xml` as public routes for AI crawler access
+- JSON-LD `SoftwareApplication` structured data on landing page
+- ETag caching with `If-None-Match` / 304 support for landing page and `/v1/models`
+
+### Changed
+- All API error messages translated to English with `[Proxy]` or `[NVIDIA]` prefix
+- Cache-Control headers: landing page `max-age=300`, `/stats` `max-age=30`, `/health` `no-store`, admin API `no-store`
+
 ## [1.7.0] - 2026-04-27
 
 ### Added
