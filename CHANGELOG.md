@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.9.0] - 2026-05-02
+
+### Added
+- Log authenticated 404 requests to `request_log` for admin visibility (method + path in model column)
+- Detailed error messages with context and guidance for all proxy and NVIDIA errors
+
 ## [1.8.0] - 2026-05-01
 
 ### Added
