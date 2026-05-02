@@ -147,7 +147,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       if (model) {
         sendJson(res, 200, model);
       } else {
-        sendJson(res, 404, { error: { type: 'not_found', message: '[Proxy] Model not found' } });
+        sendJson(res, 404, { error: { type: 'not_found', message: `[Proxy] Model not found: ${modelId}. Check GET /v1/models for the full list` } });
       }
       return;
     }
@@ -168,7 +168,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       const ipRecord = regIpCounter.get(ip);
       if (ipRecord && now < ipRecord.resetAt) {
         if (ipRecord.count >= REG_MAX_PER_IP) {
-          sendJson(res, 429, { error: { type: 'rate_limit_error', message: '[Proxy] Too many requests. Please try again later.' } });
+          sendJson(res, 429, { error: { type: 'rate_limit_error', message: `[Proxy] Too many requests from this IP. Limit: ${REG_MAX_PER_IP} per hour` } });
           return;
         }
         ipRecord.count++;
@@ -196,7 +196,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       } catch (err) {
         deleteRegistration(regId);
         console.error('Email send failed:', err.message);
-        sendJson(res, 500, { error: { type: 'api_error', message: '[Proxy] Failed to send verification email' } });
+        sendJson(res, 500, { error: { type: 'api_error', message: '[Proxy] Failed to send verification email. Please try again or contact the administrator' } });
         return;
       }
       sendJson(res, 200, { message: 'Verification code sent' });
@@ -244,12 +244,12 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       const bearer = req.headers['authorization']?.replace(/^Bearer\s+/i, '');
       const auth = req.headers['x-api-key'] || bearer;
       if (!auth) {
-        sendJson(res, 401, { error: { type: 'authentication_error', message: '[Proxy] Invalid access token' } });
+        sendJson(res, 401, { error: { type: 'authentication_error', message: '[Proxy] Invalid or missing access token. Provide via Authorization: Bearer or x-api-key header' } });
         return;
       }
       const result = validateToken(auth, AUTH_TOKEN_ENV);
       if (!result.valid) {
-        sendJson(res, 401, { error: { type: 'authentication_error', message: '[Proxy] Invalid access token' } });
+        sendJson(res, 401, { error: { type: 'authentication_error', message: '[Proxy] Invalid or missing access token. Provide via Authorization: Bearer or x-api-key header' } });
         return;
       }
       authTokenId = result.id;
@@ -261,16 +261,16 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     }
 
     if (authTokenId !== null) logRequest(null, `${req.method} ${pathname}`, false, 404, authTokenId);
-    sendJson(res, 404, { error: { type: 'not_found', message: '[Proxy] Not found' } });
+    sendJson(res, 404, { error: { type: 'not_found', message: `[Proxy] Unknown endpoint: ${req.method} ${pathname}. Available: POST /v1/messages, GET /v1/models` } });
   } catch (err) {
     if (!res.headersSent) {
       if (err.statusCode === 413) {
-        sendJson(res, 413, { error: { type: 'invalid_request_error', message: '[Proxy] Request body too large' } });
+        sendJson(res, 413, { error: { type: 'invalid_request_error', message: `[Proxy] Request body exceeds ${process.env.PROXY_MAX_BODY_MB || '10'}MB limit` } });
       } else if (err instanceof SyntaxError) {
-        sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] Invalid JSON body' } });
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] Request body is not valid JSON' } });
       } else {
         console.error('Request processing error:', err.message || err);
-        sendJson(res, 500, { error: { type: 'internal_error', message: '[Proxy] Internal server error' } });
+        sendJson(res, 500, { error: { type: 'internal_error', message: '[Proxy] Internal server error. If this persists, contact the administrator' } });
       }
     } else {
       res.end();
@@ -525,7 +525,7 @@ async function handleMessages(req, res, authTokenId) {
   const body = await readJsonBody(req);
 
   if (!body.messages || !Array.isArray(body.messages)) {
-    sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] messages field is required' } });
+    sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] Missing required field: messages (array). See Anthropic Messages API format' } });
     return;
   }
 
@@ -578,7 +578,7 @@ async function handleMessages(req, res, authTokenId) {
 
   const keyEntry = getNextKey(NVIDIA_API_KEY);
   if (!keyEntry) {
-    sendJson(res, 503, { error: { type: 'service_error', message: '[Proxy] No available API key' } });
+    sendJson(res, 503, { error: { type: 'service_error', message: '[Proxy] No active NVIDIA API key available. Contact the administrator' } });
     return;
   }
 
@@ -615,12 +615,12 @@ async function handleMessages(req, res, authTokenId) {
     }
     // Non-multimodal model received image
     if (upstream.status === 400 && lower.includes('not a multimodal model')) {
-      sendJson(res, 400, { error: { type: 'invalid_request_error', message: `[NVIDIA] ${body.model} does not support image input` } });
+      sendJson(res, 400, { error: { type: 'invalid_request_error', message: `[NVIDIA] ${body.model} does not support image input. Try vision-capable models: meta/llama-3.2-*-vision-instruct, google/gemma-3n-*` } });
       return;
     }
     // Model not found on NVIDIA
     if (upstream.status === 404) {
-      sendJson(res, 404, { error: { type: 'not_found', message: `[NVIDIA] ${body.model} is not available on NVIDIA NIM` } });
+      sendJson(res, 404, { error: { type: 'not_found', message: `[NVIDIA] Model ${body.model} not found on NVIDIA NIM. Check available models at GET /v1/models` } });
       return;
     }
     // Rate limit → retry once with a different key, then overloaded_error
@@ -657,10 +657,10 @@ async function handleMessages(req, res, authTokenId) {
       const headers = { ...JSON_HEADERS };
       if (retryAfter) headers['Retry-After'] = retryAfter;
       res.writeHead(529, headers);
-      res.end(JSON.stringify({ error: { type: 'overloaded_error', message: '[NVIDIA] Rate limit reached' } }));
+      res.end(JSON.stringify({ error: { type: 'overloaded_error', message: `[NVIDIA] Rate limit reached. Retry after ${retryAfter || 'a few'} seconds` } }));
       return;
     }
-    sendJson(res, upstream.status, { error: { type: 'api_error', message: '[NVIDIA] Upstream API error' } });
+    sendJson(res, upstream.status, { error: { type: 'api_error', message: `[NVIDIA] Upstream API returned HTTP ${upstream.status}. This is an NVIDIA-side issue, not a proxy error` } });
     return;
   }
 
