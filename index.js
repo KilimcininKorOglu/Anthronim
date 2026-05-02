@@ -260,6 +260,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       return;
     }
 
+    if (authTokenId !== null) logRequest(null, `${req.method} ${pathname}`, false, 404, authTokenId);
     sendJson(res, 404, { error: { type: 'not_found', message: '[Proxy] Not found' } });
   } catch (err) {
     if (!res.headersSent) {
