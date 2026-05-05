@@ -239,7 +239,7 @@ export async function handleAdmin(req, res, pathname) {
 
   if (sub === '/login' && req.method === 'GET') {
     const lang = getLang(req);
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Cache-Control': 'no-store' });
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'", 'Cache-Control': 'no-store' });
     res.end(loginHtml[lang]);
     return;
   }
