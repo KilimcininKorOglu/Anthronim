@@ -22,6 +22,7 @@ let modelCache = null;
 let modelCacheTime = 0;
 
 export const authFailures = new Map();
+const AUTH_FAILURES_MAP_MAX = 10000;
 export const MAX_FAILURES = parseInt(process.env.MAX_AUTH_FAILURES || '5', 10);
 export const LOCKOUT_MS = parseInt(process.env.LOCKOUT_MINUTES || '15', 10) * 60 * 1000;
 
@@ -133,6 +134,7 @@ function requireAuth(req, res) {
   const now = Date.now();
   if (!record || now >= record.resetAt) {
     const prev = record ? record.lockoutCount || 0 : 0;
+    if (authFailures.size >= AUTH_FAILURES_MAP_MAX) authFailures.delete(authFailures.keys().next().value);
     authFailures.set(ip, { count: 1, resetAt: now + LOCKOUT_MS, lockoutCount: prev });
   } else {
     record.count++;
@@ -257,6 +259,7 @@ export async function handleAdmin(req, res, pathname) {
       const now = Date.now();
       if (!record || now >= record.resetAt) {
         const prev = record ? record.lockoutCount || 0 : 0;
+        if (authFailures.size >= AUTH_FAILURES_MAP_MAX) authFailures.delete(authFailures.keys().next().value);
         authFailures.set(ip, { count: 1, resetAt: now + LOCKOUT_MS, lockoutCount: prev });
       } else {
         record.count++;

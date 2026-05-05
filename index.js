@@ -32,6 +32,7 @@ const BREVO_SENDER_NAME = process.env.BREVO_SENDER_NAME || 'Anthronim';
 const REG_MAX_PER_IP = parseInt(process.env.REG_MAX_PER_IP || '10', 10);
 const REG_IP_WINDOW_MS = parseInt(process.env.REG_IP_WINDOW_MINUTES || '60', 10) * 60 * 1000;
 const regIpCounter = new Map();
+const REG_IP_MAP_MAX = 10000;
 
 if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL) {
   indexHtmlRaw = indexHtmlRaw.replace(/<!-- REGISTRATION_START -->[\s\S]*?<!-- REGISTRATION_END -->/, '<p>{{no_brevo}}</p>');
@@ -173,6 +174,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
         }
         ipRecord.count++;
       } else {
+        if (regIpCounter.size >= REG_IP_MAP_MAX) regIpCounter.delete(regIpCounter.keys().next().value);
         regIpCounter.set(ip, { count: 1, resetAt: now + REG_IP_WINDOW_MS });
       }
     }
