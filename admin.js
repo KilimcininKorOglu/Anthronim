@@ -43,8 +43,9 @@ function verifyJwt(token) {
   if (!token) return null;
   const parts = token.split('.');
   if (parts.length !== 3) return null;
-  const sig = base64url(createHmac('sha256', JWT_SECRET).update(`${parts[0]}.${parts[1]}`).digest());
-  if (sig !== parts[2]) return null;
+  const sigBuf = Buffer.from(base64url(createHmac('sha256', JWT_SECRET).update(`${parts[0]}.${parts[1]}`).digest()));
+  const candBuf = Buffer.from(parts[2]);
+  if (sigBuf.length !== candBuf.length || !timingSafeEqual(sigBuf, candBuf)) return null;
   try {
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
