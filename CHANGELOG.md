@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0] - 2026-05-05
+
+### Added
+- SVG favicon with terminal cursor motif across all pages
+
+### Fixed
+- Use timingSafeEqual for JWT signature comparison in verifyJwt (timing attack prevention)
+- Validate Referer origin before redirect in /set-lang (open redirect prevention)
+- Add CSP frame-ancestors header to admin login page (clickjacking defence-in-depth)
+- Cap rate-limit Maps (regIpCounter, authFailures) at 10000 entries to prevent unbounded memory growth
+
 ## [1.9.0] - 2026-05-02
 
 ### Added
