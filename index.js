@@ -123,7 +123,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
     if (pathname.startsWith('/set-lang/')) {
       const lang = pathname.split('/')[2];
       if (lang === 'tr' || lang === 'en') {
-        res.writeHead(302, { 'Location': req.headers.referer || '/', 'Set-Cookie': `lang=${lang}; Path=/; Max-Age=31536000; SameSite=Lax` });
+        res.writeHead(302, { 'Location': safeReferer(req), 'Set-Cookie': `lang=${lang}; Path=/; Max-Age=31536000; SameSite=Lax` });
         res.end();
         return;
       }
@@ -368,6 +368,16 @@ async function sendVerificationEmail(email, code, lang) {
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function safeReferer(req) {
+  try {
+    const ref = req.headers.referer;
+    if (!ref) return '/';
+    const url = new URL(ref);
+    if (url.host !== (req.headers.host || '')) return '/';
+    return url.pathname + (url.search || '');
+  } catch { return '/'; }
+}
 
 function W(data) {
   return 'W/"' + crypto.createHash('sha256').update(typeof data === 'string' ? data : JSON.stringify(data)).digest('hex').slice(0, 16) + '"';
