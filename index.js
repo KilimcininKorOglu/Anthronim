@@ -146,7 +146,14 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       const models = await getModels();
       const model = models.data.find(m => m.id === modelId);
       if (model) {
-        sendJson(res, 200, model);
+        const etag = W(model);
+        if (matchETag(req.headers['if-none-match'], etag)) {
+          res.writeHead(304, { ...JSON_HEADERS, 'Cache-Control': 'public, max-age=300', 'ETag': etag });
+          res.end();
+          return;
+        }
+        res.writeHead(200, { ...JSON_HEADERS, 'Cache-Control': 'public, max-age=300', 'ETag': etag });
+        res.end(JSON.stringify(model));
       } else {
         sendJson(res, 404, { error: { type: 'not_found', message: `[Proxy] Model not found: ${modelId}. Check GET /v1/models for the full list` } });
       }
