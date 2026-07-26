@@ -66,11 +66,19 @@
       gap: 16px;
     }
 
-    .header-nav a {
+    .header-nav a,
+    .header-nav form button {
       color: var(--text-dim);
       text-decoration: none;
       font-size: 12px;
       letter-spacing: 1px;
+    }
+    .header-nav form button {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: inherit;
     }
 
     .header-nav a:hover {
@@ -229,7 +237,7 @@
     <div class="header-nav">
       <a href="/">{{home}}</a>
       <a href="/admin">{{panel}}</a>
-      <a href="/admin/logout">{{logout}}</a>
+      <form method="POST" action="/admin/logout" style="display:inline;margin:0;"><button type="submit">{{logout}}</button></form>
       <a href="/set-lang/tr">tr</a> · <a href="/set-lang/en">en</a>
     </div>
   </div>

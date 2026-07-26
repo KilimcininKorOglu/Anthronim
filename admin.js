@@ -299,9 +299,13 @@ export async function handleAdmin(req, res, pathname) {
     return;
   }
 
-  if (sub === '/logout') {
-    // Advance the revocation epoch so every token minted so far (including any
-    // stolen copy of this one) is rejected server-side, not just this cookie.
+  if (!requireAuth(req, res)) return;
+
+  if (sub === '/logout' && req.method === 'POST') {
+    // POST-only + requireAuth above: a state-changing GET (or cross-site POST,
+    // which SameSite=Lax strips of the cookie) can no longer force a logout.
+    // This matters because logout advances the revocation epoch, killing every
+    // token minted so far (including any stolen copy), not just this cookie.
     tokenEpoch = getTokenEpoch() + 1;
     setSetting('admin_token_epoch', tokenEpoch);
     res.writeHead(302, {
@@ -311,8 +315,6 @@ export async function handleAdmin(req, res, pathname) {
     res.end();
     return;
   }
-
-  if (!requireAuth(req, res)) return;
 
   // GET /admin — Dashboard HTML
   if (sub === '' && req.method === 'GET') {
