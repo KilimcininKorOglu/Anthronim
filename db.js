@@ -72,6 +72,8 @@ let stmtDeleteRegistration;
 let stmtCleanupRegistrations;
 let stmtCountRecentRegistrations;
 let stmtFindTokenByLabel;
+let stmtGetSetting;
+let stmtSetSetting;
 
 export function initDb() {
   db = new Database(DB_PATH);
@@ -140,6 +142,11 @@ export function initDb() {
       attempts   INTEGER DEFAULT 0,
       expires_at TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
     );
   `);
 
@@ -236,6 +243,8 @@ export function initDb() {
   stmtCleanupRegistrations = db.prepare("DELETE FROM pending_registrations WHERE expires_at <= datetime('now')");
   stmtCountRecentRegistrations = db.prepare("SELECT COUNT(*) AS count FROM pending_registrations WHERE email = ? AND created_at > datetime('now', '-5 minutes')");
   stmtFindTokenByLabel = db.prepare('SELECT id FROM auth_tokens WHERE label = ? AND is_active = 1');
+  stmtGetSetting = db.prepare('SELECT value FROM app_settings WHERE key = ?');
+  stmtSetSetting = db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
 }
 
 // --- API Key cache ---
@@ -255,6 +264,15 @@ function loadActiveKeys() {
 
 export function invalidateTokenCache() {
   cachedTokens = null;
+}
+
+export function getSetting(key) {
+  const row = stmtGetSetting.get(key);
+  return row ? row.value : null;
+}
+
+export function setSetting(key, value) {
+  stmtSetSetting.run(key, String(value));
 }
 
 export function closeDb() {

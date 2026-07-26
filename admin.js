@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { timingSafeEqual, createHmac, randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, updateToken, listTokens, listBenchmarkModels, addBenchmarkModel, removeBenchmarkModel, toggleBenchmarkModel } from './db.js';
+import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, updateToken, listTokens, listBenchmarkModels, addBenchmarkModel, removeBenchmarkModel, toggleBenchmarkModel, getSetting, setSetting } from './db.js';
 import { renderTemplate, getLang } from './lang.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,9 +35,20 @@ function base64url(buf) { return (Buffer.isBuffer(buf) ? buf : Buffer.from(buf))
 function signJwt(payload) {
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const now = Math.floor(Date.now() / 1000);
-  const body = base64url(JSON.stringify({ ...payload, iat: now, exp: now + JWT_EXPIRY_SEC }));
+  const body = base64url(JSON.stringify({ ...payload, iat: now, exp: now + JWT_EXPIRY_SEC, epoch: getTokenEpoch() }));
   const sig = base64url(createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest());
   return `${header}.${body}.${sig}`;
+}
+
+// Server-side revocation: a monotonic epoch counter embedded in each token.
+// Logout increments the persisted epoch so every token minted with an older
+// epoch is rejected. An integer counter avoids the same-second ambiguity a
+// timestamp comparison would have. Lazily loaded because this module is
+// imported before initDb().
+let tokenEpoch = null;
+function getTokenEpoch() {
+  if (tokenEpoch === null) tokenEpoch = parseInt(getSetting('admin_token_epoch') || '0', 10);
+  return tokenEpoch;
 }
 
 function verifyJwt(token) {
@@ -50,6 +61,8 @@ function verifyJwt(token) {
   try {
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+    // Reject tokens minted before the current epoch (revoked by a logout).
+    if ((payload.epoch || 0) < getTokenEpoch()) return null;
     return payload;
   } catch { return null; }
 }
@@ -287,6 +300,10 @@ export async function handleAdmin(req, res, pathname) {
   }
 
   if (sub === '/logout') {
+    // Advance the revocation epoch so every token minted so far (including any
+    // stolen copy of this one) is rejected server-side, not just this cookie.
+    tokenEpoch = getTokenEpoch() + 1;
+    setSetting('admin_token_epoch', tokenEpoch);
     res.writeHead(302, {
       'Location': ADMIN_PATH + '/login',
       'Set-Cookie': `admin_token=; Path=${ADMIN_PATH}; HttpOnly; SameSite=Lax; Secure; Max-Age=0`,
