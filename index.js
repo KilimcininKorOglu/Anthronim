@@ -278,7 +278,8 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
   } catch (err) {
     if (!res.headersSent) {
       if (err.statusCode === 413) {
-        sendJson(res, 413, { error: { type: 'invalid_request_error', message: `[Proxy] Request body exceeds ${process.env.PROXY_MAX_BODY_MB || '10'}MB limit` } });
+        const limitMb = err.limitMb || process.env.PROXY_MAX_BODY_MB || '10';
+        sendJson(res, 413, { error: { type: 'invalid_request_error', message: `[Proxy] Request body exceeds ${limitMb}MB limit` } });
       } else if (err instanceof SyntaxError) {
         sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] Request body is not valid JSON' } });
       } else if (err.statusCode === 400) {
@@ -568,7 +569,8 @@ function loadDotEnv() {
   }
 }
 
-const MAX_BODY = parseInt(process.env.PROXY_MAX_BODY_MB || '10', 10) * 1024 * 1024;
+const MAX_BODY_MB = process.env.PROXY_MAX_BODY_MB || '10';
+const MAX_BODY = parseInt(MAX_BODY_MB, 10) * 1024 * 1024;
 
 async function readJsonBody(req) {
   const chunks = [];
@@ -577,7 +579,7 @@ async function readJsonBody(req) {
     size += chunk.length;
     if (size > MAX_BODY) {
       req.destroy();
-      throw Object.assign(new Error('Body too large'), { statusCode: 413 });
+      throw Object.assign(new Error('Body too large'), { statusCode: 413, limitMb: MAX_BODY_MB });
     }
     chunks.push(chunk);
   }

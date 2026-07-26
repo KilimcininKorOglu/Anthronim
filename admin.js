@@ -173,7 +173,8 @@ function maskKey(key) {
   return key.slice(0, 8) + '****...' + key.slice(-4);
 }
 
-const MAX_BODY = parseInt(process.env.ADMIN_MAX_BODY_MB || '1', 10) * 1024 * 1024;
+const MAX_BODY_MB = process.env.ADMIN_MAX_BODY_MB || '1';
+const MAX_BODY = parseInt(MAX_BODY_MB, 10) * 1024 * 1024;
 
 async function readJsonBody(req) {
   const chunks = [];
@@ -182,7 +183,7 @@ async function readJsonBody(req) {
     size += chunk.length;
     if (size > MAX_BODY) {
       req.destroy();
-      throw Object.assign(new Error('Body too large'), { statusCode: 413 });
+      throw Object.assign(new Error('Body too large'), { statusCode: 413, limitMb: MAX_BODY_MB });
     }
     chunks.push(chunk);
   }
