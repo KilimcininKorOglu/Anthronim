@@ -495,6 +495,27 @@ function buildContent(message) {
   return content;
 }
 
+// Map a validated NVIDIA chat-completion payload to the Anthropic message
+// envelope and send it. Shared by the main path and the 429-retry path.
+function sendMessageResponse(res, data, model) {
+  const choice = assertUpstreamShape(data);
+  const message = choice.message;
+  const content = buildContent(message);
+  let stopReason = 'end_turn';
+  if (choice.finish_reason === 'length') stopReason = 'max_tokens';
+  if (choice.finish_reason === 'tool_calls' || message.tool_calls?.length) stopReason = 'tool_use';
+  sendJson(res, 200, {
+    id: data.id,
+    type: 'message',
+    role: 'assistant',
+    content: content.length ? content : [{ type: 'text', text: '' }],
+    model,
+    stop_reason: stopReason,
+    stop_sequence: null,
+    usage: { input_tokens: data.usage.prompt_tokens, output_tokens: data.usage.completion_tokens },
+  });
+}
+
 function sanitizeErrorBody(raw) {
   try {
     const parsed = JSON.parse(raw);
@@ -733,19 +754,7 @@ async function handleMessages(req, res, authTokenId) {
         if (retry.ok) {
           logRequest(retryKey.id, body.model, !!body.stream, retry.status, authTokenId);
           if (body.stream) { await handleStream(retry, body.model, res); return; }
-          const data = await retry.json();
-          const choice = assertUpstreamShape(data);
-          const message = choice.message;
-          const content = buildContent(message);
-          let stopReason = 'end_turn';
-          if (choice.finish_reason === 'length') stopReason = 'max_tokens';
-          if (choice.finish_reason === 'tool_calls' || message.tool_calls?.length) stopReason = 'tool_use';
-          sendJson(res, 200, {
-            id: data.id, type: 'message', role: 'assistant',
-            content: content.length ? content : [{ type: 'text', text: '' }],
-            model: body.model, stop_reason: stopReason, stop_sequence: null,
-            usage: { input_tokens: data.usage.prompt_tokens, output_tokens: data.usage.completion_tokens },
-          });
+          sendMessageResponse(res, await retry.json(), body.model);
           return;
         }
       }
@@ -767,28 +776,7 @@ async function handleMessages(req, res, authTokenId) {
     return;
   }
 
-  const data = await upstream.json();
-  const choice = assertUpstreamShape(data);
-  const message = choice.message;
-  const content = buildContent(message);
-
-  let stop_reason = 'end_turn';
-  if (choice.finish_reason === 'length') stop_reason = 'max_tokens';
-  if (choice.finish_reason === 'tool_calls' || message.tool_calls?.length) stop_reason = 'tool_use';
-
-  sendJson(res, 200, {
-    id: data.id,
-    type: 'message',
-    role: 'assistant',
-    content: content.length ? content : [{ type: 'text', text: '' }],
-    model: body.model,
-    stop_reason,
-    stop_sequence: null,
-    usage: {
-      input_tokens: data.usage.prompt_tokens,
-      output_tokens: data.usage.completion_tokens,
-    },
-  });
+  sendMessageResponse(res, await upstream.json(), body.model);
 }
 
 function convertMessage(msg) {
