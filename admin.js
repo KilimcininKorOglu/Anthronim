@@ -182,7 +182,9 @@ async function readJsonBody(req) {
   for await (const chunk of req) {
     size += chunk.length;
     if (size > MAX_BODY) {
-      req.destroy();
+      // Do not destroy the socket: an RST reset would kill the connection
+      // before the 413 is written. Throw instead so the handler can respond
+      // and the socket closes cleanly.
       throw Object.assign(new Error('Body too large'), { statusCode: 413, limitMb: MAX_BODY_MB });
     }
     chunks.push(chunk);
@@ -201,7 +203,9 @@ async function readFormBody(req) {
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY) { req.destroy(); return null; }
+    // Stop consuming without an RST reset so the caller's redirect still
+    // reaches the client; a destroy() here would close the socket first.
+    if (size > MAX_BODY) return null;
     chunks.push(chunk);
   }
   return Object.fromEntries(new URLSearchParams(Buffer.concat(chunks).toString('utf8')));

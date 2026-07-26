@@ -604,7 +604,10 @@ async function readJsonBody(req) {
   for await (const chunk of req) {
     size += chunk.length;
     if (size > MAX_BODY) {
-      req.destroy();
+      // Do NOT destroy the socket here: an RST reset kills the connection
+      // before the outer handler can write the 413, so the client just sees
+      // ECONNRESET. Throw instead — we stop consuming the body, the handler
+      // sends the 413, and the socket closes cleanly (FIN).
       throw Object.assign(new Error('Body too large'), { statusCode: 413, limitMb: MAX_BODY_MB });
     }
     chunks.push(chunk);
