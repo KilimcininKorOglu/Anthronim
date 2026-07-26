@@ -594,8 +594,8 @@
       });
     }
 
-    document.getElementById('regEmail').addEventListener('keydown', e => { if (e.key === 'Enter') handleRegister(); });
-    document.getElementById('regCode').addEventListener('keydown', e => { if (e.key === 'Enter') handleVerify(); });
+    document.getElementById('regEmail')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleRegister(); });
+    document.getElementById('regCode')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleVerify(); });
 
     document.getElementById('baseUrl').textContent = location.origin;
     document.getElementById('baseUrlRcp').textContent = location.origin;
