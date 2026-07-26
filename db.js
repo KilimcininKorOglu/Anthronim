@@ -74,6 +74,10 @@ let stmtCountRecentRegistrations;
 let stmtFindTokenByLabel;
 let stmtGetSetting;
 let stmtSetSetting;
+let stmtHasKeys;
+let stmtHasTokens;
+let stmtCountLogs;
+let stmtGetLogs;
 
 export function initDb() {
   db = new Database(DB_PATH);
@@ -234,6 +238,13 @@ export function initDb() {
       created_at = datetime('now')
   `);
   stmtGetBenchmarks = db.prepare('SELECT mb.model, mb.short_ttfb, mb.short_total, mb.long_ttfb, mb.long_total, mb.error, mb.created_at FROM model_benchmarks mb INNER JOIN benchmark_config bc ON mb.model = bc.model AND bc.is_active = 1 ORDER BY mb.model');
+  stmtHasKeys = db.prepare('SELECT COUNT(*) AS count FROM api_keys');
+  stmtHasTokens = db.prepare('SELECT COUNT(*) AS count FROM auth_tokens WHERE is_active = 1');
+  // Fixed-SQL filters: a NULL bind disables that predicate, so one prepared
+  // statement covers every filter combination (no dynamic WHERE assembly).
+  const logFilter = `WHERE (@statusMin IS NULL OR r.status_code >= @statusMin) AND (@model IS NULL OR r.model = @model)`;
+  stmtCountLogs = db.prepare(`SELECT COUNT(*) AS count FROM request_log r ${logFilter}`);
+  stmtGetLogs = db.prepare(`SELECT r.id, r.api_key_id, r.auth_token_id, r.model, r.stream, r.status_code, r.error_detail, r.created_at, k.label AS key_label, t.label AS token_label FROM request_log r LEFT JOIN api_keys k ON r.api_key_id = k.id LEFT JOIN auth_tokens t ON r.auth_token_id = t.id ${logFilter} ORDER BY r.id DESC LIMIT @limit OFFSET @offset`);
 
   // Registration statements
   stmtInsertRegistration = db.prepare('INSERT INTO pending_registrations (email, code, expires_at) VALUES (?, ?, ?)');
@@ -337,8 +348,7 @@ export function listKeys() {
 }
 
 export function hasKeys() {
-  const row = db.prepare('SELECT COUNT(*) AS count FROM api_keys').get();
-  return row.count > 0;
+  return stmtHasKeys.get().count > 0;
 }
 
 // --- Auth Token functions ---
@@ -403,8 +413,7 @@ export function listTokens() {
 }
 
 export function hasTokens() {
-  const row = db.prepare('SELECT COUNT(*) AS count FROM auth_tokens WHERE is_active = 1').get();
-  return row.count > 0;
+  return stmtHasTokens.get().count > 0;
 }
 
 // --- Logging ---
@@ -431,19 +440,12 @@ export function cleanupOldLogs() {
 }
 
 export function getLogs({ limit = 100, offset = 0, statusMin = null, model = null } = {}) {
-  const conditions = [];
-  const params = [];
-  if (statusMin !== null) {
-    conditions.push('r.status_code >= ?');
-    params.push(statusMin);
-  }
-  if (model) {
-    conditions.push('r.model = ?');
-    params.push(model);
-  }
-  const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
-  const total = db.prepare(`SELECT COUNT(*) AS count FROM request_log r ${where}`).get(...params).count;
-  const logs = db.prepare(`SELECT r.id, r.api_key_id, r.auth_token_id, r.model, r.stream, r.status_code, r.error_detail, r.created_at, k.label AS key_label, t.label AS token_label FROM request_log r LEFT JOIN api_keys k ON r.api_key_id = k.id LEFT JOIN auth_tokens t ON r.auth_token_id = t.id ${where} ORDER BY r.id DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);
+  // A NULL bind disables the matching predicate (see stmtCountLogs/stmtGetLogs).
+  // Preserve the original semantics: statusMin 0 is a valid filter; an empty
+  // model string means "no model filter".
+  const filter = { statusMin: statusMin ?? null, model: model || null };
+  const total = stmtCountLogs.get(filter).count;
+  const logs = stmtGetLogs.all({ ...filter, limit, offset });
   return { total, logs };
 }
 
