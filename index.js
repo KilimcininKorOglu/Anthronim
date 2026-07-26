@@ -277,6 +277,8 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
         sendJson(res, 413, { error: { type: 'invalid_request_error', message: `[Proxy] Request body exceeds ${process.env.PROXY_MAX_BODY_MB || '10'}MB limit` } });
       } else if (err instanceof SyntaxError) {
         sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] Request body is not valid JSON' } });
+      } else if (err.statusCode === 400) {
+        sendJson(res, 400, { error: { type: 'invalid_request_error', message: err.message } });
       } else {
         console.error('Request processing error:', err.message || err);
         sendJson(res, 500, { error: { type: 'internal_error', message: '[Proxy] Internal server error. If this persists, contact the administrator' } });
@@ -550,6 +552,9 @@ async function handleMessages(req, res, authTokenId) {
 
   const messages = [];
   if (body.system) {
+    if (typeof body.system !== 'string' && !Array.isArray(body.system)) {
+      throw Object.assign(new Error('[Proxy] Invalid field: system must be a string or an array of text blocks'), { statusCode: 400 });
+    }
     const systemContent = typeof body.system === 'string'
       ? body.system
       : body.system.map(b => b.text).join('\n');
@@ -754,6 +759,9 @@ function convertMessage(msg) {
         content: resultContent,
       });
     } else if (block.type === 'image') {
+      if (!block.source || !block.source.media_type || !block.source.data) {
+        throw Object.assign(new Error('[Proxy] Invalid image block: source.media_type and source.data are required'), { statusCode: 400 });
+      }
       textParts.push({ type: 'image_url', image_url: { url: `data:${block.source.media_type};base64,${block.source.data}` } });
     }
   }
