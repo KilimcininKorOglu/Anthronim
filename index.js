@@ -390,7 +390,9 @@ async function getModels() {
 }
 
 function generateVerificationCode() {
-  return crypto.randomInt(100000, 999999).toString();
+  // randomInt max is exclusive, so 1000000 yields the full inclusive
+  // 100000-999999 six-digit range (999999 was previously unreachable).
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 function generateAuthToken() {
