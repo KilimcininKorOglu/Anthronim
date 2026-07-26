@@ -498,10 +498,6 @@ export function upsertBenchmark(model, shortTtfb, shortTotal, longTtfb, longTota
   stmtUpsertBenchmark.run(model, shortTtfb, shortTotal, longTtfb, longTotal, error);
 }
 
-export function getBenchmarks() {
-  return stmtGetBenchmarks.all();
-}
-
 // --- Registration functions ---
 
 export function addRegistration(email, hashedCode, expiresAt) {
