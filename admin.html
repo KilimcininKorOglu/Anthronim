@@ -635,8 +635,8 @@
         <th>{{actions}}</th>
       </tr></thead>
       <tbody>${tokens.map(t => `<tr>
-        <td class="editable" onclick="editToken(${t.id}, 'label', '${escAttr(t.label)}')">${escHtml(t.label || '-')}</td>
-        <td class="key-cell editable" onclick="editToken(${t.id}, 'token', '${escAttr(t.token)}')">${escHtml(t.token)}</td>
+        <td class="editable" data-edit-id="${t.id}" data-edit-field="label" data-edit-current="${escAttr(t.label)}">${escHtml(t.label || '-')}</td>
+        <td class="key-cell editable" data-edit-id="${t.id}" data-edit-field="token" data-edit-current="${escAttr(t.token)}">${escHtml(t.token)}</td>
         <td><span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'}">${t.is_active ? '{{active}}' : '{{inactive}}'}</span></td>
         <td>${formatNumber(t.request_count)}</td>
         <td>${t.error_count > 0 ? '<span class="error-rate">' + formatNumber(t.error_count) + '</span>' : '0'}</td>
@@ -696,6 +696,15 @@
       } catch (err) {
         alert('Hata: ' + err.message);
       }
+    });
+
+    // Delegated handler for inline-editable token cells. Reading the current
+    // value from dataset (an HTML-attribute context) keeps it out of any
+    // JS-string context, so attacker-controlled labels cannot break out.
+    document.getElementById('tokensContainer').addEventListener('click', (e) => {
+      const cell = e.target.closest('.editable[data-edit-field]');
+      if (!cell) return;
+      editToken(Number(cell.dataset.editId), cell.dataset.editField, cell.dataset.editCurrent);
     });
 
     async function loadBenchmarks() {
