@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.1.1] - 2026-07-26
+
+### Fixed
+- Copy models.js into the runtime Docker image (fixes ERR_MODULE_NOT_FOUND crash on deploy)
+
 ## [2.1.0] - 2026-07-26
 
 ### Added
