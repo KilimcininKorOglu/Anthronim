@@ -11,7 +11,7 @@ export function hashToken(token) {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function safeEqual(a, b) {
+export function safeEqual(a, b) {
   const bufA = Buffer.from(a);
   const bufB = Buffer.from(b);
   if (bufA.length !== bufB.length) {

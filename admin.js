@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { timingSafeEqual, createHmac, randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, updateToken, listTokens, listBenchmarkModels, addBenchmarkModel, removeBenchmarkModel, toggleBenchmarkModel, getSetting, setSetting } from './db.js';
+import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, updateToken, listTokens, listBenchmarkModels, addBenchmarkModel, removeBenchmarkModel, toggleBenchmarkModel, getSetting, setSetting, safeEqual } from './db.js';
 import { renderTemplate, getLang } from './lang.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -104,16 +104,6 @@ function checkBasicAuth(req) {
   const user = decoded.slice(0, colon);
   const pass = decoded.slice(colon + 1);
   return safeEqual(user, ADMIN_USER) && safeEqual(pass, ADMIN_PASS);
-}
-
-function safeEqual(a, b) {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) {
-    timingSafeEqual(bufA, bufA);
-    return false;
-  }
-  return timingSafeEqual(bufA, bufB);
 }
 
 export function getClientIp(req) {
