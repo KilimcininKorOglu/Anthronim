@@ -357,10 +357,20 @@ export async function handleAdmin(req, res, pathname) {
       try {
         const upstream = await fetch(NVIDIA_MODELS_URL);
         if (upstream.ok) {
-          modelCache = await upstream.json();
-          modelCacheTime = now;
+          const json = await upstream.json();
+          // Don't cache an empty list; retry on the next request instead.
+          if (json && Array.isArray(json.data) && json.data.length > 0) {
+            modelCache = json;
+            modelCacheTime = now;
+          } else {
+            console.warn('[NVIDIA] /models returned an empty list for admin; not caching');
+          }
+        } else {
+          console.warn(`[NVIDIA] /models fetch failed with HTTP ${upstream.status} for admin; serving stale/empty list`);
         }
-      } catch (e) { /* use stale cache */ }
+      } catch (e) {
+        console.warn(`[NVIDIA] /models fetch error for admin: ${e.message || e}; serving stale/empty list`);
+      }
     }
     sendJson(res, 200, modelCache || { object: 'list', data: [] });
     return;

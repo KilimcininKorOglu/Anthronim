@@ -367,16 +367,24 @@ async function getModels() {
     if (res.ok) {
       const nvidia = await res.json();
       const data = (nvidia.data || []).map(toAnthropicModel);
-      modelCache = {
-        data,
-        has_more: false,
-        first_id: data.length > 0 ? data[0].id : null,
-        last_id: data.length > 0 ? data[data.length - 1].id : null,
-      };
-      modelCacheTime = now;
+      // Don't cache an empty list: it would pin "no models" for the full TTL
+      // even after upstream recovers. Serve it once, retry on the next call.
+      if (data.length > 0) {
+        modelCache = {
+          data,
+          has_more: false,
+          first_id: data[0].id,
+          last_id: data[data.length - 1].id,
+        };
+        modelCacheTime = now;
+      } else {
+        console.warn('[NVIDIA] /models returned an empty list; not caching');
+      }
+    } else {
+      console.warn(`[NVIDIA] /models fetch failed with HTTP ${res.status}; serving stale/empty list`);
     }
   } catch (e) {
-    // Fetch failed; return stale cache or empty
+    console.warn(`[NVIDIA] /models fetch error: ${e.message || e}; serving stale/empty list`);
   }
   return modelCache || { data: [], has_more: false, first_id: null, last_id: null };
 }
