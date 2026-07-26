@@ -236,6 +236,40 @@ Proxy birden fazla NVIDIA API anahtarını destekler. Anahtarlar SQLite veritaba
 - İstek logları otomatik temizlenir (`LOG_RETENTION_DAYS` gün sonra silinir).
 - Docker konteyneri salt okunur dosya sistemi, düşürülmüş yetenekler ve root olmayan kullanıcıyla çalışır.
 
+## Yedekleme ve Geri Yükleme
+
+Tüm kalıcı veri (API anahtarları, erişim anahtarları, istek logları, benchmark ayarları) tek bir SQLite dosyasında tutulur (`DB_PATH`, Docker'da `./docker-data/anthronim.db`). Bu dosya bind-mount edilen tek bir dizinde durur; dizin silinirse veya disk bozulursa **tüm veri kalıcı olarak kaybolur.** Düzenli yedekleme zorunludur.
+
+WAL modu aktif olduğundan yalnızca `.db` dosyasını kopyalamak eksik yedek üretir; `-wal` ve `-shm` dosyaları da dahil edilmeli veya tutarlı bir anlık görüntü için `.backup` komutu kullanılmalıdır.
+
+Tutarlı yedek (sunucu çalışırken güvenli):
+
+```bash
+# Docker ortamında
+docker compose exec app sh -c 'sqlite3 /app/data/anthronim.db ".backup /app/data/backup.db"'
+docker compose cp app:/app/data/backup.db ./anthronim-$(date +%F).db
+
+# Doğrudan (sqlite3 CLI kuruluysa)
+sqlite3 ./docker-data/anthronim.db ".backup ./anthronim-$(date +%F).db"
+```
+
+Örnek günlük otomatik yedek (host cron, 03:15'te, son 14 günü tutar):
+
+```bash
+15 3 * * * cd /opt/anthronim && sqlite3 ./docker-data/anthronim.db ".backup ./backups/anthronim-$(date +\%F).db" && find ./backups -name 'anthronim-*.db' -mtime +14 -delete
+```
+
+Geri yükleme (önce servisi durdur, sonra dosyayı yerine koy):
+
+```bash
+docker compose down
+cp ./anthronim-2026-07-26.db ./docker-data/anthronim.db
+rm -f ./docker-data/anthronim.db-wal ./docker-data/anthronim.db-shm
+docker compose up -d
+```
+
+Yedekleri birincil sunucu diskinin dışında (nesne depolama, ayrı disk) saklamanız önerilir. Coolify sunucusu taşınırken `docker-data` dizininin de taşındığından emin olun.
+
 ## Yönetim Paneli
 
 `ADMIN_USER` ve `ADMIN_PASS` ortam değişkenleri ayarlandığında `/admin` yolu aktif olur. Tarayıcı HTTP Basic Auth penceresi gösterir.
