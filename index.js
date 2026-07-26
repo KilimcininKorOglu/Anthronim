@@ -284,6 +284,8 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
         sendJson(res, 400, { error: { type: 'invalid_request_error', message: '[Proxy] Request body is not valid JSON' } });
       } else if (err.statusCode === 400) {
         sendJson(res, 400, { error: { type: 'invalid_request_error', message: err.message } });
+      } else if (err.statusCode === 502) {
+        sendJson(res, 502, { error: { type: 'api_error', message: err.message } });
       } else {
         console.error('Request processing error:', err.message || err);
         sendJson(res, 500, { error: { type: 'internal_error', message: '[Proxy] Internal server error. If this persists, contact the administrator' } });
@@ -436,6 +438,20 @@ function matchETag(header, etag) {
 function sendJson(res, status, data) {
   res.writeHead(status, JSON_HEADERS);
   res.end(JSON.stringify(data));
+}
+
+// Validate the NVIDIA payload shape before mapping it to Anthropic format so a
+// well-formed-JSON but structurally-unexpected body (empty choices, missing
+// usage, API-version drift) surfaces as a 502 upstream error, not a proxy 500.
+function assertUpstreamShape(data) {
+  const choice = data && Array.isArray(data.choices) ? data.choices[0] : undefined;
+  if (!choice || !choice.message) {
+    throw Object.assign(new Error('[NVIDIA] Upstream returned an unexpected response shape (missing choices/message). This is an NVIDIA-side issue, not a proxy error'), { statusCode: 502 });
+  }
+  if (!data.usage) {
+    throw Object.assign(new Error('[NVIDIA] Upstream returned an unexpected response shape (missing usage). This is an NVIDIA-side issue, not a proxy error'), { statusCode: 502 });
+  }
+  return choice;
 }
 
 function buildContent(message) {
@@ -705,7 +721,7 @@ async function handleMessages(req, res, authTokenId) {
           logRequest(retryKey.id, body.model, !!body.stream, retry.status, authTokenId);
           if (body.stream) { await handleStream(retry, body.model, res); return; }
           const data = await retry.json();
-          const choice = data.choices[0];
+          const choice = assertUpstreamShape(data);
           const message = choice.message;
           const content = buildContent(message);
           let stopReason = 'end_turn';
@@ -739,7 +755,7 @@ async function handleMessages(req, res, authTokenId) {
   }
 
   const data = await upstream.json();
-  const choice = data.choices[0];
+  const choice = assertUpstreamShape(data);
   const message = choice.message;
   const content = buildContent(message);
 
