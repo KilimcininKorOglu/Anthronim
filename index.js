@@ -1020,10 +1020,13 @@ async function handleStream(upstream, model, res) {
 
     await closeStream(pendingStopReason || 'end_turn');
   } catch (err) {
-    clearInterval(keepaliveTimer);
     if (!clientGone) {
       console.error('Akış işleme hatası:', err.message || err);
     }
     if (!res.writableEnded) res.end();
+  } finally {
+    // Clear on every exit path, including the clientGone early returns which
+    // otherwise leaked the interval (and its captured res/reader) per abort.
+    clearInterval(keepaliveTimer);
   }
 }
