@@ -273,7 +273,7 @@ const server = http.createServer({ noDelay: true, keepAlive: true }, async (req,
       return;
     }
 
-    if (authTokenId !== null) logRequest(null, `${req.method} ${pathname}`, false, 404, authTokenId);
+    logRequest(null, `${req.method} ${pathname}`, false, 404, authTokenId);
     sendJson(res, 404, { error: { type: 'not_found', message: `[Proxy] Unknown endpoint: ${req.method} ${pathname}. Available: POST /v1/messages, GET /v1/models` } });
   } catch (err) {
     if (!res.headersSent) {
@@ -658,9 +658,7 @@ async function handleMessages(req, res, authTokenId) {
 
   if (!upstream.ok) {
     const errorBody = await upstream.text().catch(() => '');
-    if (keyEntry.id !== null || authTokenId !== null) {
-      logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId, sanitizeErrorBody(errorBody));
-    }
+    logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId, sanitizeErrorBody(errorBody));
     // Auto-deactivate key on 403 auth failure
     if (upstream.status === 403 && keyEntry.id !== null && errorBody.includes('Authorization failed')) {
       toggleKey(keyEntry.id, false);
@@ -698,9 +696,7 @@ async function handleMessages(req, res, authTokenId) {
           body: JSON.stringify(payload),
         });
         if (retry.ok) {
-          if (retryKey.id !== null || authTokenId !== null) {
-            logRequest(retryKey.id, body.model, !!body.stream, retry.status, authTokenId);
-          }
+          logRequest(retryKey.id, body.model, !!body.stream, retry.status, authTokenId);
           if (body.stream) { await handleStream(retry, body.model, res); return; }
           const data = await retry.json();
           const choice = data.choices[0];
@@ -729,9 +725,7 @@ async function handleMessages(req, res, authTokenId) {
     return;
   }
 
-  if (keyEntry.id !== null || authTokenId !== null) {
-    logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId);
-  }
+  logRequest(keyEntry.id, body.model, !!body.stream, upstream.status, authTokenId);
 
   if (body.stream) {
     await handleStream(upstream, body.model, res);
