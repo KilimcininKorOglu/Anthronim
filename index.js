@@ -570,6 +570,8 @@ async function handleMessages(req, res, authTokenId) {
     max_tokens: body.max_tokens,
     stream: !!body.stream,
   };
+  // Ask NVIDIA to emit a usage chunk on the stream so output_tokens is reported.
+  if (body.stream) payload.stream_options = { include_usage: true };
   if (body.temperature !== undefined) payload.temperature = body.temperature;
   if (body.top_p !== undefined) payload.top_p = body.top_p;
   if (body.stop_sequences) payload.stop = body.stop_sequences;
@@ -917,6 +919,9 @@ async function handleStream(upstream, model, res) {
 
   try {
     let buffer = '';
+    // Set once finish_reason arrives; the stream is not closed yet so the
+    // trailing include_usage chunk (which follows the finish chunk) is read.
+    let pendingStopReason = null;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -935,7 +940,7 @@ async function handleStream(upstream, model, res) {
         if (!data) continue;
 
         if (data === '[DONE]') {
-          await closeStream(toolCallCount > 0 ? 'tool_use' : 'end_turn');
+          await closeStream(pendingStopReason || (toolCallCount > 0 ? 'tool_use' : 'end_turn'));
           return;
         }
 
@@ -946,6 +951,11 @@ async function handleStream(upstream, model, res) {
           console.error('JSON çözümleme hatası: uzunluk=%d', data.length);
           continue;
         }
+
+        // Capture usage before any control-flow skip: the include_usage chunk
+        // carries usage with an empty choices array, and usage may also ride on
+        // the finish chunk, both of which return/continue before the tail read.
+        if (parsed.usage) tokens = parsed.usage.completion_tokens;
 
         const choice = parsed.choices?.[0];
         if (!choice) continue;
@@ -1001,15 +1011,14 @@ async function handleStream(upstream, model, res) {
           let reason = 'end_turn';
           if (finish === 'length') reason = 'max_tokens';
           if (finish === 'tool_calls' || toolCallCount > 0) reason = 'tool_use';
-          await closeStream(reason);
-          return;
+          // Defer closing so the trailing include_usage chunk is captured; the
+          // stream closes on [DONE] or when the upstream reader ends.
+          pendingStopReason = reason;
         }
-
-        if (parsed.usage) tokens = parsed.usage.completion_tokens;
       }
     }
 
-    await closeStream('end_turn');
+    await closeStream(pendingStopReason || 'end_turn');
   } catch (err) {
     clearInterval(keepaliveTimer);
     if (!clientGone) {
