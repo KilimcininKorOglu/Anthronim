@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { addKey, removeKey, toggleKey, listKeys, getStats, getLogs, addToken, removeToken, toggleToken, updateToken, listTokens, listBenchmarkModels, addBenchmarkModel, removeBenchmarkModel, toggleBenchmarkModel, getSetting, setSetting, safeEqual } from './db.js';
 import { renderTemplate, getLang } from './lang.js';
+import { fetchRawModels } from './models.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -16,10 +17,6 @@ const rawAdminPath = process.env.ADMIN_PATH || '/admin';
 export const ADMIN_PATH = (rawAdminPath.startsWith('/') ? rawAdminPath : '/' + rawAdminPath).replace(/\/+$/, '');
 
 const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
-const NVIDIA_MODELS_URL = (process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1') + '/models';
-const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
-let modelCache = null;
-let modelCacheTime = 0;
 
 export const authFailures = new Map();
 const AUTH_FAILURES_MAP_MAX = 10000;
@@ -346,27 +343,7 @@ export async function handleAdmin(req, res, pathname) {
 
   // GET /admin/api/models
   if (sub === '/api/models' && req.method === 'GET') {
-    const now = Date.now();
-    if (!modelCache || (now - modelCacheTime) >= MODEL_CACHE_TTL) {
-      try {
-        const upstream = await fetch(NVIDIA_MODELS_URL);
-        if (upstream.ok) {
-          const json = await upstream.json();
-          // Don't cache an empty list; retry on the next request instead.
-          if (json && Array.isArray(json.data) && json.data.length > 0) {
-            modelCache = json;
-            modelCacheTime = now;
-          } else {
-            console.warn('[NVIDIA] /models returned an empty list for admin; not caching');
-          }
-        } else {
-          console.warn(`[NVIDIA] /models fetch failed with HTTP ${upstream.status} for admin; serving stale/empty list`);
-        }
-      } catch (e) {
-        console.warn(`[NVIDIA] /models fetch error for admin: ${e.message || e}; serving stale/empty list`);
-      }
-    }
-    sendJson(res, 200, modelCache || { object: 'list', data: [] });
+    sendJson(res, 200, await fetchRawModels());
     return;
   }
 

@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats, listBenchmarkModels, upsertBenchmark, addToken, addRegistration, findRegistration, incrementRegistrationAttempts, deleteRegistration, cleanupExpiredRegistrations, hasRecentRegistration, deactivateTokenByEmail, hashToken, invalidateTokenCache, closeDb } from './db.js';
 import { handleAdmin, ADMIN_PATH, getClientIp } from './admin.js';
 import { renderTemplate, getLang, translations } from './lang.js';
+import { fetchRawModels } from './models.js';
 
 loadDotEnv();
 initDb();
@@ -46,10 +47,6 @@ const indexEtag = {
   tr: W(indexHtml.tr),
   en: W(indexHtml.en),
 };
-
-const MODEL_CACHE_TTL = parseInt(process.env.MODEL_CACHE_TTL || '3600000', 10);
-let modelCache = null;
-let modelCacheTime = 0;
 
 const ROBOTS_TXT = `User-agent: *\nAllow: /\nSitemap: https://nvidia.srv.hermestech.uk/sitemap.xml\n`;
 const SITEMAP_XML = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://nvidia.srv.hermestech.uk/</loc><changefreq>daily</changefreq></url>\n</urlset>`;
@@ -358,35 +355,15 @@ function toAnthropicModel(m) {
 }
 
 async function getModels() {
-  const now = Date.now();
-  if (modelCache && (now - modelCacheTime) < MODEL_CACHE_TTL) {
-    return modelCache;
-  }
-  try {
-    const res = await fetch(`${API_BASE}/models`);
-    if (res.ok) {
-      const nvidia = await res.json();
-      const data = (nvidia.data || []).map(toAnthropicModel);
-      // Don't cache an empty list: it would pin "no models" for the full TTL
-      // even after upstream recovers. Serve it once, retry on the next call.
-      if (data.length > 0) {
-        modelCache = {
-          data,
-          has_more: false,
-          first_id: data[0].id,
-          last_id: data[data.length - 1].id,
-        };
-        modelCacheTime = now;
-      } else {
-        console.warn('[NVIDIA] /models returned an empty list; not caching');
-      }
-    } else {
-      console.warn(`[NVIDIA] /models fetch failed with HTTP ${res.status}; serving stale/empty list`);
-    }
-  } catch (e) {
-    console.warn(`[NVIDIA] /models fetch error: ${e.message || e}; serving stale/empty list`);
-  }
-  return modelCache || { data: [], has_more: false, first_id: null, last_id: null };
+  // Map the shared raw NVIDIA list to the Anthropic-style list envelope.
+  const raw = await fetchRawModels();
+  const data = (raw.data || []).map(toAnthropicModel);
+  return {
+    data,
+    has_more: false,
+    first_id: data.length > 0 ? data[0].id : null,
+    last_id: data.length > 0 ? data[data.length - 1].id : null,
+  };
 }
 
 function generateVerificationCode() {
