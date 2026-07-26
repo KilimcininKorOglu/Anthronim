@@ -968,6 +968,12 @@ async function handleStream(upstream, model, res) {
             const fn = tc.function;
             let entry = toolCalls.get(idx);
             if (!entry) {
+              // Close any open thinking or text block before the first tool_use
+              // so every content block has a unique, matching start/stop index.
+              if (hasThinkingBlock) {
+                await send('content_block_stop', { type: 'content_block_stop', index: contentIndex++ });
+                hasThinkingBlock = false;
+              }
               if (hasTextBlock) {
                 await send('content_block_stop', { type: 'content_block_stop', index: contentIndex++ });
                 hasTextBlock = false;
