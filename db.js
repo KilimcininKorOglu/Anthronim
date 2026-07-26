@@ -257,6 +257,20 @@ export function invalidateTokenCache() {
   cachedTokens = null;
 }
 
+export function closeDb() {
+  if (!db) return;
+  try {
+    // Flush the WAL into the main .db file so a snapshot/backup taken right
+    // after shutdown is complete, then close the handle cleanly.
+    db.pragma('wal_checkpoint(TRUNCATE)');
+    db.close();
+  } catch (e) {
+    console.error('DB kapatma hatası:', e.message || e);
+  } finally {
+    db = null;
+  }
+}
+
 function loadActiveTokens() {
   if (!cachedTokens) {
     cachedTokens = new Map();

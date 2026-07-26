@@ -1,7 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats, listBenchmarkModels, upsertBenchmark, addToken, addRegistration, findRegistration, incrementRegistrationAttempts, deleteRegistration, cleanupExpiredRegistrations, hasRecentRegistration, deactivateTokenByEmail, hashToken, invalidateTokenCache } from './db.js';
+import { initDb, getNextKey, logRequest, hasKeys, validateToken, hasTokens, toggleKey, cleanupOldLogs, getPublicStats, listBenchmarkModels, upsertBenchmark, addToken, addRegistration, findRegistration, incrementRegistrationAttempts, deleteRegistration, cleanupExpiredRegistrations, hasRecentRegistration, deactivateTokenByEmail, hashToken, invalidateTokenCache, closeDb } from './db.js';
 import { handleAdmin, ADMIN_PATH, getClientIp } from './admin.js';
 import { renderTemplate, getLang, translations } from './lang.js';
 
@@ -27,6 +27,7 @@ const BENCH_INTERVAL = benchIntervalMinutes * 60 * 1000;
 let indexHtmlRaw = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const HOST = process.env.HOST || '0.0.0.0';
+const SHUTDOWN_TIMEOUT_MS = parseInt(process.env.SHUTDOWN_TIMEOUT_MS || '10000', 10);
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const AUTH_TOKEN_ENV = process.env.AUTH_TOKEN;
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
@@ -301,6 +302,29 @@ server.listen(PORT, HOST, () => {
   console.log(`Anthronim http://${HOST}:${PORT} adresinde dinliyor.`);
 });
 
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} alındı, kapanıyor...`);
+  clearInterval(benchTimer);
+  clearTimeout(benchWarmup);
+  // Stop accepting new connections; the callback fires once in-flight requests finish.
+  server.close(() => {
+    closeDb();
+    process.exit(0);
+  });
+  // Force exit if connections stay open past the timeout. unref so this timer
+  // never itself keeps the process alive.
+  setTimeout(() => {
+    console.error('Kapanış zaman aşımı, zorla çıkılıyor');
+    closeDb();
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
 const UNSUPPORTED = { supported: false };
 const SUPPORTED = { supported: true };
 const DEFAULT_CAPABILITIES = {
@@ -514,8 +538,8 @@ async function runBenchmarks() {
   }
 }
 
-setTimeout(runBenchmarks, 30000);
-setInterval(runBenchmarks, BENCH_INTERVAL);
+const benchWarmup = setTimeout(runBenchmarks, 30000);
+const benchTimer = setInterval(runBenchmarks, BENCH_INTERVAL);
 
 function loadDotEnv() {
   try {
