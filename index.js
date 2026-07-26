@@ -20,7 +20,10 @@ setInterval(() => {
 const API_BASE = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
 const BENCH_SHORT_PROMPT = 'Say hi in one word.';
 const BENCH_LONG_PROMPT = 'Write a Python binary search tree implementation with insert, delete, search, and traversal. Include docstrings.';
-const BENCH_INTERVAL = parseInt(process.env.BENCH_INTERVAL_MINUTES || '60', 10) * 60 * 1000;
+let benchIntervalMinutes = parseInt(process.env.BENCH_INTERVAL_MINUTES || '60', 10);
+// Guard against 0/NaN/negative, which would make setInterval a runaway loop.
+if (!Number.isFinite(benchIntervalMinutes) || benchIntervalMinutes < 1) benchIntervalMinutes = 60;
+const BENCH_INTERVAL = benchIntervalMinutes * 60 * 1000;
 let indexHtmlRaw = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -481,22 +484,34 @@ async function runSingleBench(model, prompt, maxTokens) {
   }
 }
 
+let benchRunning = false;
 async function runBenchmarks() {
+  // Re-entrancy guard: a run can take minutes; skip this tick if the previous
+  // run is still in flight so overlapping runs never race the key pool or writes.
+  if (benchRunning) {
+    console.log('Benchmark zaten çalışıyor, bu tur atlanıyor');
+    return;
+  }
   const models = listBenchmarkModels().filter(m => m.is_active);
   if (models.length === 0) return;
 
-  console.log(`Benchmark başlatılıyor (${models.length} model, paralel)...`);
-  await Promise.allSettled(models.map(async ({ model }) => {
-    try {
-      const short = await runSingleBench(model, BENCH_SHORT_PROMPT, 100);
-      const long = await runSingleBench(model, BENCH_LONG_PROMPT, 2048);
-      const error = short.error || long.error || null;
-      upsertBenchmark(model, short.ttfb, short.total, long.ttfb, long.total, error);
-      console.log(`Benchmark: ${model} — kısa ${short.total}s, uzun ${long.total}s${error ? ' (' + error + ')' : ''}`);
-    } catch (e) {
-      upsertBenchmark(model, null, null, null, null, e.message?.slice(0, 100));
-    }
-  }));
+  benchRunning = true;
+  try {
+    console.log(`Benchmark başlatılıyor (${models.length} model, paralel)...`);
+    await Promise.allSettled(models.map(async ({ model }) => {
+      try {
+        const short = await runSingleBench(model, BENCH_SHORT_PROMPT, 100);
+        const long = await runSingleBench(model, BENCH_LONG_PROMPT, 2048);
+        const error = short.error || long.error || null;
+        upsertBenchmark(model, short.ttfb, short.total, long.ttfb, long.total, error);
+        console.log(`Benchmark: ${model} — kısa ${short.total}s, uzun ${long.total}s${error ? ' (' + error + ')' : ''}`);
+      } catch (e) {
+        upsertBenchmark(model, null, null, null, null, e.message?.slice(0, 100));
+      }
+    }));
+  } finally {
+    benchRunning = false;
+  }
 }
 
 setTimeout(runBenchmarks, 30000);
