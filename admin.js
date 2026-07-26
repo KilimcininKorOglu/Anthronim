@@ -248,13 +248,17 @@ export async function handleAdmin(req, res, pathname) {
 
   if (sub === '/login' && req.method === 'POST') {
     const ip = getClientIp(req);
+    // Read the body first, then fetch the failure record. Doing the get, the
+    // lockout check, and the counter update on one synchronous tick (no await
+    // in between) prevents a TOCTOU race where concurrent requests all read a
+    // stale record and overwrite the counter back to 1, bypassing the lockout.
+    const body = await readFormBody(req);
     const record = authFailures.get(ip);
     if (record && record.count >= MAX_FAILURES && Date.now() < record.resetAt) {
       res.writeHead(302, { 'Location': ADMIN_PATH + '/login?error=lockout' });
       res.end();
       return;
     }
-    const body = await readFormBody(req);
     if (!body || !safeEqual(body.username || '', ADMIN_USER) || !safeEqual(body.password || '', ADMIN_PASS)) {
       const now = Date.now();
       if (!record || now >= record.resetAt) {
