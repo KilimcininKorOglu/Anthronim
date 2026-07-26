@@ -413,7 +413,11 @@ function safeReferer(req) {
     if (!ref) return '/';
     const url = new URL(ref);
     if (url.host !== (req.headers.host || '')) return '/';
-    return url.pathname + (url.search || '');
+    // A path beginning with // is a protocol-relative absolute URL (e.g.
+    // //evil.com resolves to https://evil.com); reject it so the redirect
+    // stays a single-slash-rooted same-origin path.
+    const out = url.pathname + (url.search || '');
+    return out.startsWith('//') ? '/' : out;
   } catch { return '/'; }
 }
 
