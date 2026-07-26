@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.1.0] - 2026-07-26
+
+### Added
+- Graceful shutdown with WAL checkpoint on SIGTERM/SIGINT
+
+### Changed
+- Share NVIDIA model fetch and cache across proxy and admin
+- Extract shared non-streaming response builder
+- Cache hasKeys/hasTokens/getLogs statements in initDb
+- Share safeEqual from db.js instead of duplicating
+- Remove unused getBenchmarks export
+- Cache /v1/models/:id responses with ETag and 304 support
+- Document SQLite backup and restore procedure
+
+### Fixed
+- Deliver 413/redirect on oversized body instead of resetting the socket
+- Make verification code range inclusive of 999999
+- Log NVIDIA model-list fetch failures and avoid caching empty results
+- Validate NVIDIA response shape before mapping to Anthropic format
+- Report correct body-size limit in 413 responses for admin routes
+- Reject protocol-relative paths in safeReferer
+- Restrict admin logout to authenticated POST
+- Log proxy requests even without DB-backed key or token
+- Add server-side revocation for admin JWT sessions
+- Guard benchmark runner against overlapping runs and invalid interval
+- Return 400 for malformed system and image block shapes
+- Clear SSE keepalive timer on all stream exit paths
+- Request and capture upstream usage for streaming output_tokens
+- Close open thinking block before starting tool_use in stream
+- Close TOCTOU race in admin login lockout counter
+- Prevent stored XSS via token label in admin token table
+- Guard registration DOM listeners when registration is disabled
+
 ## [2.0.0] - 2026-05-05
 
 ### Added
